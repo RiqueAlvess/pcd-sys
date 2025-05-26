@@ -9,6 +9,7 @@ urlpatterns = [
     path('admin/', admin.site.urls, name='adminpage'),
     path('core/', include('core.urls')),
     path('userpcd/', include('userpcd.urls')),  
+    path('usercompany/', include('usercompany.urls')),
 ]
 
 # Servir arquivos de mídia em desenvolvimento

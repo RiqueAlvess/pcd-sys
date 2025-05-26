@@ -1,4 +1,8 @@
-# Adicionar estes models ao arquivo userpcd/models.py existente
+from django.db import models
+from django.utils import timezone
+from core.models import Empresa
+from userpcd.models import Vaga, Candidatura
+
 
 class EmpresaExtendida(models.Model):
     """Extensão do modelo Empresa com dados adicionais"""
@@ -36,8 +40,10 @@ class EmpresaExtendida(models.Model):
         self.save()
         return self.percentual_completude
 
+    def __str__(self):
+        return f"Extensão - {self.empresa.razao_social}"
 
-# Estender o modelo Vaga existente
+
 class VagaExtendida(models.Model):
     """Campos adicionais para vagas"""
     
@@ -82,6 +88,9 @@ class VagaExtendida(models.Model):
             self.candidatos_compativel = self.total_candidatos
         self.save()
 
+    def __str__(self):
+        return f"Extensão - {self.vaga.titulo}"
+
 
 class ProcessoSeletivo(models.Model):
     """Gerencia o processo seletivo de cada candidato"""
@@ -105,6 +114,9 @@ class ProcessoSeletivo(models.Model):
     
     class Meta:
         ordering = ['-atualizado_em']
+
+    def __str__(self):
+        return f"Processo - {self.candidatura.pcd.user.username} - {self.candidatura.vaga.titulo}"
 
 
 class NotificacaoEmpresa(models.Model):

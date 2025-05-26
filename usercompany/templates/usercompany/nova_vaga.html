@@ -1,0 +1,373 @@
+{% extends "usercompany/base.html" %}
+{% block title %}Nova Vaga - Portal PCD{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+  <!-- Header -->
+  <div class="flex items-center justify-between">
+    <div>
+      <nav class="flex items-center space-x-2 text-sm text-gray-500 mb-2">
+        <a href="{% url 'dashboard_empresa' %}" class="hover:text-green-600 focus-visible">Dashboard</a>
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+        </svg>
+        <span class="text-gray-900">Nova Vaga</span>
+      </nav>
+      <h1 class="text-2xl font-bold text-gray-900">Criar Nova Vaga</h1>
+      <p class="text-gray-600 mt-1">Publique uma oportunidade inclusiva para pessoas com deficiência</p>
+    </div>
+    
+    <a href="{% url 'minhas_vagas' %}" 
+       class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus-visible">
+      <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+      </svg>
+      Cancelar
+    </a>
+  </div>
+
+  <!-- Formulário -->
+  <form method="POST" class="bg-white rounded-xl shadow-sm border border-gray-200">
+    {% csrf_token %}
+    
+    <div class="p-6 space-y-8">
+      <!-- Informações Básicas -->
+      <div>
+        <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+          <svg class="w-5 h-5 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          Informações Básicas
+        </h3>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              Título da Vaga *
+            </label>
+            <input type="text" name="titulo" required
+                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                   placeholder="Ex: Desenvolvedor Full Stack - Remoto">
+            <p class="text-xs text-gray-500 mt-1">Seja claro e específico sobre a posição</p>
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              Tipo da Oportunidade *
+            </label>
+            <select name="tipo" required onchange="toggleDuracaoCapacitacao(this.value)"
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200">
+              <option value="emprego">Emprego</option>
+              <option value="capacitacao">Capacitação/Curso</option>
+            </select>
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              <span id="numero-label">Número de Vagas *</span>
+            </label>
+            <input type="number" name="numero_vagas" min="1" value="1" required
+                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200">
+          </div>
+          
+          <div id="duracao-capacitacao" class="md:col-span-2 hidden">
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              Duração da Capacitação
+            </label>
+            <input type="text" name="duracao_capacitacao"
+                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                   placeholder="Ex: 40 horas, 3 meses, 120 horas">
+            <p class="text-xs text-gray-500 mt-1">Informe a duração total do programa</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Descrição -->
+      <div>
+        <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+          <svg class="w-5 h-5 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+          </svg>
+          Descrição da Vaga
+        </h3>
+        
+        <div class="space-y-6">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              Descrição Detalhada *
+            </label>
+            <textarea name="descricao" rows="6" required
+                      class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                      placeholder="Descreva a vaga, as responsabilidades, o ambiente de trabalho..."></textarea>
+            <p class="text-xs text-gray-500 mt-1">Seja detalhado sobre as atividades e o ambiente inclusivo</p>
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              Requisitos e Qualificações *
+            </label>
+            <textarea name="requisitos" rows="4" required
+                      class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                      placeholder="Liste os requisitos técnicos, experiência necessária, formação..."></textarea>
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              Benefícios Oferecidos
+            </label>
+            <textarea name="beneficios" rows="3"
+                      class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                      placeholder="Vale alimentação, plano de saúde, flexibilidade de horário..."></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- Localização -->
+      <div>
+        <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+          <svg class="w-5 h-5 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+          </svg>
+          Localização e Modalidade
+        </h3>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              Modalidade *
+            </label>
+            <select name="modalidade" required
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200">
+              <option value="">Selecione</option>
+              <option value="presencial">Presencial</option>
+              <option value="remoto">Remoto</option>
+              <option value="hibrido">Híbrido</option>
+            </select>
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              Cidade *
+            </label>
+            <input type="text" name="cidade" required
+                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                   placeholder="São Paulo">
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              Estado (UF) *
+            </label>
+            <select name="uf" required
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200">
+              <option value="">Selecione</option>
+              <option value="AC">Acre</option>
+              <option value="AL">Alagoas</option>
+              <option value="AP">Amapá</option>
+              <option value="AM">Amazonas</option>
+              <option value="BA">Bahia</option>
+              <option value="CE">Ceará</option>
+              <option value="DF">Distrito Federal</option>
+              <option value="ES">Espírito Santo</option>
+              <option value="GO">Goiás</option>
+              <option value="MA">Maranhão</option>
+              <option value="MT">Mato Grosso</option>
+              <option value="MS">Mato Grosso do Sul</option>
+              <option value="MG">Minas Gerais</option>
+              <option value="PA">Pará</option>
+              <option value="PB">Paraíba</option>
+              <option value="PR">Paraná</option>
+              <option value="PE">Pernambuco</option>
+              <option value="PI">Piauí</option>
+              <option value="RJ">Rio de Janeiro</option>
+              <option value="RN">Rio Grande do Norte</option>
+              <option value="RS">Rio Grande do Sul</option>
+              <option value="RO">Rondônia</option>
+              <option value="RR">Roraima</option>
+              <option value="SC">Santa Catarina</option>
+              <option value="SP">São Paulo</option>
+              <option value="SE">Sergipe</option>
+              <option value="TO">Tocantins</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Remuneração -->
+      <div>
+        <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+          <svg class="w-5 h-5 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"/>
+          </svg>
+          Remuneração (Opcional)
+        </h3>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              Salário Mínimo (R$)
+            </label>
+            <input type="number" name="salario_min" step="0.01" min="0"
+                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                   placeholder="2000.00">
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              Salário Máximo (R$)
+            </label>
+            <input type="number" name="salario_max" step="0.01" min="0"
+                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                   placeholder="5000.00">
+          </div>
+        </div>
+        <p class="text-xs text-gray-500 mt-2">
+          A transparência salarial ajuda a atrair candidatos mais qualificados
+        </p>
+      </div>
+
+      <!-- Acessibilidade -->
+      <div>
+        <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+          <svg class="w-5 h-5 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.582-3.756z"/>
+          </svg>
+          Informações de Acessibilidade
+        </h3>
+        
+        <div class="space-y-6">
+          <div class="flex items-center">
+            <input type="checkbox" name="acessivel" id="acessivel" checked
+                   class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded">
+            <label for="acessivel" class="ml-3 text-sm font-medium text-gray-700">
+              Esta vaga é adequada para pessoas com deficiência
+            </label>
+          </div>
+          
+          <div class="flex items-center">
+            <input type="checkbox" name="acesso_transporte_publico" id="acesso_transporte_publico"
+                   class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded">
+            <label for="acesso_transporte_publico" class="ml-3 text-sm font-medium text-gray-700">
+              Local acessível via transporte público
+            </label>
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-3">
+              Deficiências especificamente adequadas (opcional)
+            </label>
+            <p class="text-xs text-gray-500 mb-3">
+              Se não selecionar nenhuma, a vaga será considerada para todas as deficiências
+            </p>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {% for deficiencia in deficiencias %}
+                <label class="flex items-start p-3 border border-gray-200 rounded-lg hover:border-green-300 hover:bg-green-50 transition-all duration-200 cursor-pointer">
+                  <input type="checkbox" name="deficiencias_elegiveis" value="{{ deficiencia.id }}" 
+                         class="mt-1 h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded">
+                  <div class="ml-3">
+                    <div class="text-sm font-medium text-gray-900">
+                      {{ deficiencia.nome }}
+                    </div>
+                  </div>
+                </label>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rodapé do Formulário -->
+    <div class="bg-gray-50 px-6 py-4 rounded-b-xl">
+      <div class="flex flex-col sm:flex-row gap-4 sm:justify-end">
+        <a href="{% url 'minhas_vagas' %}" 
+           class="w-full sm:w-auto text-center border-2 border-gray-300 text-gray-700 py-3 px-6 rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-all duration-300 font-medium focus-visible">
+          Cancelar
+        </a>
+        <button type="submit" 
+                class="w-full sm:w-auto bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold py-3 px-8 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center">
+          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+          </svg>
+          Publicar Vaga
+        </button>
+      </div>
+    </div>
+  </form>
+
+  <!-- Dicas -->
+  <div class="bg-blue-50 border border-blue-200 rounded-lg p-6">
+    <div class="flex items-start">
+      <svg class="w-6 h-6 text-blue-600 mt-0.5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+      <div>
+        <h4 class="text-sm font-medium text-blue-800 mb-2">Dicas para criar uma vaga inclusiva:</h4>
+        <ul class="text-sm text-blue-700 space-y-1">
+          <li>• Use linguagem clara e direta na descrição</li>
+          <li>• Destaque as adaptações disponíveis no ambiente de trabalho</li>
+          <li>• Seja específico sobre os recursos de acessibilidade</li>
+          <li>• Mencione o compromisso da empresa com a diversidade</li>
+          <li>• Sua vaga passará por avaliação médica antes de ser publicada</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  function toggleDuracaoCapacitacao(tipo) {
+    const duracaoDiv = document.getElementById('duracao-capacitacao');
+    const numeroLabel = document.getElementById('numero-label');
+    
+    if (tipo === 'capacitacao') {
+      duracaoDiv.classList.remove('hidden');
+      numeroLabel.textContent = 'Número de Vagas/Participantes *';
+    } else {
+      duracaoDiv.classList.add('hidden');
+      numeroLabel.textContent = 'Número de Vagas *';
+    }
+  }
+
+  // Validação do formulário
+  document.querySelector('form').addEventListener('submit', function(e) {
+    const requiredFields = this.querySelectorAll('[required]');
+    let hasErrors = false;
+    
+    requiredFields.forEach(field => {
+      if (!field.value.trim()) {
+        field.classList.add('border-red-300', 'bg-red-50');
+        hasErrors = true;
+      } else {
+        field.classList.remove('border-red-300', 'bg-red-50');
+      }
+    });
+    
+    if (hasErrors) {
+      e.preventDefault();
+      showToast('Por favor, preencha todos os campos obrigatórios.', 'error');
+      
+      // Scroll para o primeiro campo com erro
+      const firstError = this.querySelector('.border-red-300');
+      if (firstError) {
+        firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        firstError.focus();
+      }
+    }
+  });
+
+  // Máscaras para campos monetários
+  document.querySelectorAll('input[name="salario_min"], input[name="salario_max"]').forEach(input => {
+    input.addEventListener('blur', function() {
+      if (this.value) {
+        this.value = parseFloat(this.value).toFixed(2);
+      }
+    });
+  });
+</script>
+{% endblock %}

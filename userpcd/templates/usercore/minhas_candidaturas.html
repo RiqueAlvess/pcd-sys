@@ -1,0 +1,354 @@
+{% extends "usercore/base.html" %}
+{% block title %}Minhas Candidaturas - Portal PCD{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900">Minhas Candidaturas</h1>
+      <p class="text-gray-600 mt-1">Acompanhe o status das suas candidaturas</p>
+    </div>
+    
+    <div class="mt-4 sm:mt-0">
+      <a href="{% url 'vagas_disponiveis' %}" 
+         class="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 focus-visible transition-colors">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+        </svg>
+        Nova Candidatura
+      </a>
+    </div>
+  </div>
+
+  <!-- Resumo de Status -->
+  <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+    {% with candidaturas=page_obj.object_list %}
+      <div class="bg-white rounded-lg p-4 border border-gray-200">
+        <div class="text-2xl font-bold text-gray-900">{{ candidaturas|length }}</div>
+        <div class="text-sm text-gray-600">Total</div>
+      </div>
+      
+      <div class="bg-white rounded-lg p-4 border border-gray-200">
+        <div class="text-2xl font-bold text-yellow-600">
+          {{ candidaturas|selectattr:"status"|selectattr:"pendente"|list|length }}
+        </div>
+        <div class="text-sm text-gray-600">Pendentes</div>
+      </div>
+      
+      <div class="bg-white rounded-lg p-4 border border-gray-200">
+        <div class="text-2xl font-bold text-blue-600">
+          {{ candidaturas|selectattr:"status"|selectattr:"em_analise"|list|length }}
+        </div>
+        <div class="text-sm text-gray-600">Em Análise</div>
+      </div>
+      
+      <div class="bg-white rounded-lg p-4 border border-gray-200">
+        <div class="text-2xl font-bold text-purple-600">
+          {{ candidaturas|selectattr:"status"|selectattr:"entrevista"|list|length }}
+        </div>
+        <div class="text-sm text-gray-600">Entrevistas</div>
+      </div>
+      
+      <div class="bg-white rounded-lg p-4 border border-gray-200">
+        <div class="text-2xl font-bold text-green-600">
+          {{ candidaturas|selectattr:"status"|selectattr:"aprovado"|list|length }}
+        </div>
+        <div class="text-sm text-gray-600">Aprovadas</div>
+      </div>
+    {% endwith %}
+  </div>
+
+  <!-- Lista de Candidaturas -->
+  <div class="space-y-4">
+    {% for candidatura in page_obj %}
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div class="flex items-start justify-between">
+          <div class="flex-1">
+            <!-- Cabeçalho -->
+            <div class="flex items-start justify-between mb-3">
+              <div>
+                <h3 class="text-lg font-semibold text-gray-900 mb-1">
+                  {{ candidatura.vaga.titulo }}
+                </h3>
+                <p class="text-base text-gray-700 font-medium mb-1">
+                  {{ candidatura.vaga.empresa.razao_social }}
+                </p>
+                <div class="flex items-center space-x-4 text-sm text-gray-600">
+                  <span class="flex items-center">
+                    <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                    {{ candidatura.vaga.cidade }}, {{ candidatura.vaga.uf }}
+                  </span>
+                  
+                  <span class="flex items-center">
+                    <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 002 2h2a2 2 0 002-2V6"/>
+                    </svg>
+                    {{ candidatura.vaga.get_modalidade_display }}
+                  </span>
+                  
+                  <span class="flex items-center">
+                    <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3a2 2 0 012-2h2a2 2 0 012 2v4m4 0V7a2 2 0 00-2-2H6a2 2 0 00-2 2v0h16v0"/>
+                    </svg>
+                    Candidatura em {{ candidatura.data_candidatura|date:"d/m/Y" }}
+                  </span>
+                </div>
+              </div>
+              
+              <!-- Status Badge -->
+              <div class="ml-4">
+                {% if candidatura.status == 'pendente' %}
+                  <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
+                    <svg class="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
+                    </svg>
+                    Pendente
+                  </span>
+                {% elif candidatura.status == 'em_analise' %}
+                  <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                    <svg class="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
+                    </svg>
+                    Em Análise
+                  </span>
+                {% elif candidatura.status == 'entrevista' %}
+                  <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800">
+                    <svg class="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                    </svg>
+                    Entrevista Agendada
+                  </span>
+                {% elif candidatura.status == 'aprovado' %}
+                  <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                    <svg class="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                    </svg>
+                    Aprovado
+                  </span>
+                {% else %}
+                  <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
+                    <svg class="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                    </svg>
+                    Rejeitado
+                  </span>
+                {% endif %}
+              </div>
+            </div>
+
+            <!-- Timeline de Status -->
+            <div class="mt-4">
+              <div class="flex items-center space-x-4">
+                <!-- Candidatura Enviada -->
+                <div class="flex items-center">
+                  <div class="flex items-center justify-center w-8 h-8 bg-green-100 rounded-full">
+                    <svg class="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                    </svg>
+                  </div>
+                  <div class="ml-2">
+                    <div class="text-xs font-medium text-gray-900">Candidatura Enviada</div>
+                    <div class="text-xs text-gray-500">{{ candidatura.data_candidatura|date:"d/m/Y H:i" }}</div>
+                  </div>
+                </div>
+
+                <!-- Linha de Conexão -->
+                <div class="flex-1 h-px bg-gray-200"></div>
+
+                <!-- Em Análise -->
+                <div class="flex items-center">
+                  <div class="flex items-center justify-center w-8 h-8 
+                            {% if candidatura.status != 'pendente' %}bg-blue-100{% else %}bg-gray-100{% endif %} rounded-full">
+                    {% if candidatura.status != 'pendente' %}
+                      <svg class="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                      </svg>
+                    {% else %}
+                      <div class="w-2 h-2 bg-gray-400 rounded-full"></div>
+                    {% endif %}
+                  </div>
+                  <div class="ml-2">
+                    <div class="text-xs font-medium 
+                              {% if candidatura.status != 'pendente' %}text-gray-900{% else %}text-gray-500{% endif %}">
+                      Em Análise
+                    </div>
+                    {% if candidatura.status != 'pendente' %}
+                      <div class="text-xs text-gray-500">{{ candidatura.atualizada_em|date:"d/m/Y H:i" }}</div>
+                    {% endif %}
+                  </div>
+                </div>
+
+                <!-- Linha de Conexão -->
+                <div class="flex-1 h-px bg-gray-200"></div>
+
+                <!-- Resultado Final -->
+                <div class="flex items-center">
+                  <div class="flex items-center justify-center w-8 h-8 
+                            {% if candidatura.status == 'aprovado' %}bg-green-100
+                            {% elif candidatura.status == 'entrevista' %}bg-purple-100
+                            {% elif candidatura.status == 'rejeitado' %}bg-red-100
+                            {% else %}bg-gray-100{% endif %} rounded-full">
+                    {% if candidatura.status == 'aprovado' %}
+                      <svg class="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                      </svg>
+                    {% elif candidatura.status == 'entrevista' %}
+                      <svg class="w-4 h-4 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                      </svg>
+                    {% elif candidatura.status == 'rejeitado' %}
+                      <svg class="w-4 h-4 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                      </svg>
+                    {% else %}
+                      <div class="w-2 h-2 bg-gray-400 rounded-full"></div>
+                    {% endif %}
+                  </div>
+                  <div class="ml-2">
+                    <div class="text-xs font-medium 
+                              {% if candidatura.status in 'aprovado,entrevista,rejeitado' %}text-gray-900{% else %}text-gray-500{% endif %}">
+                      {% if candidatura.status == 'aprovado' %}Aprovado
+                      {% elif candidatura.status == 'entrevista' %}Entrevista
+                      {% elif candidatura.status == 'rejeitado' %}Rejeitado
+                      {% else %}Aguardando{% endif %}
+                    </div>
+                    {% if candidatura.status in 'aprovado,entrevista,rejeitado' %}
+                      <div class="text-xs text-gray-500">{{ candidatura.atualizada_em|date:"d/m/Y H:i" }}</div>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Observações (se houver) -->
+            {% if candidatura.observacoes %}
+              <div class="mt-4 p-3 bg-gray-50 rounded-lg">
+                <h4 class="text-sm font-medium text-gray-900 mb-1">Observações da empresa:</h4>
+                <p class="text-sm text-gray-700">{{ candidatura.observacoes }}</p>
+              </div>
+            {% endif %}
+
+            <!-- Ações Contextuais -->
+            <div class="mt-4 flex items-center space-x-3">
+              {% if candidatura.status == 'entrevista' %}
+                <div class="flex items-center px-3 py-1 bg-purple-50 rounded-full">
+                  <svg class="w-4 h-4 text-purple-600 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                  </svg>
+                  <span class="text-sm font-medium text-purple-700">Prepare-se para a entrevista!</span>
+                </div>
+              {% elif candidatura.status == 'aprovado' %}
+                <div class="flex items-center px-3 py-1 bg-green-50 rounded-full">
+                  <svg class="w-4 h-4 text-green-600 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                  </svg>
+                  <span class="text-sm font-medium text-green-700">Parabéns! Aguarde contato da empresa</span>
+                </div>
+              {% elif candidatura.status == 'rejeitado' %}
+                <div class="flex items-center px-3 py-1 bg-red-50 rounded-full">
+                  <svg class="w-4 h-4 text-red-600 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                  </svg>
+                  <span class="text-sm font-medium text-red-700">Continue tentando! Há muitas oportunidades</span>
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    {% empty %}
+      <div class="text-center py-12">
+        <svg class="mx-auto h-16 w-16 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+        </svg>
+        <h3 class="text-lg font-medium text-gray-900 mb-2">Nenhuma candidatura ainda</h3>
+        <p class="text-gray-500 mb-4">
+          Que tal explorar as vagas disponíveis e enviar sua primeira candidatura?
+        </p>
+        <a href="{% url 'vagas_disponiveis' %}" 
+           class="inline-flex items-center px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 focus-visible transition-colors">
+          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 002 2h2a2 2 0 002-2V6"/>
+          </svg>
+          Explorar Vagas
+        </a>
+      </div>
+    {% endfor %}
+  </div>
+
+  <!-- Paginação -->
+  {% if page_obj.has_other_pages %}
+    <div class="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6 rounded-lg">
+      <div class="flex flex-1 justify-between sm:hidden">
+        {% if page_obj.has_previous %}
+          <a href="?page={{ page_obj.previous_page_number }}" 
+             class="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus-visible">
+            Anterior
+          </a>
+        {% endif %}
+        {% if page_obj.has_next %}
+          <a href="?page={{ page_obj.next_page_number }}" 
+             class="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus-visible">
+            Próxima
+          </a>
+        {% endif %}
+      </div>
+      
+      <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+        <div>
+          <p class="text-sm text-gray-700">
+            Mostrando
+            <span class="font-medium">{{ page_obj.start_index }}</span>
+            a
+            <span class="font-medium">{{ page_obj.end_index }}</span>
+            de
+            <span class="font-medium">{{ page_obj.paginator.count }}</span>
+            candidaturas
+          </p>
+        </div>
+        
+        <div>
+          <nav class="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Paginação">
+            {% if page_obj.has_previous %}
+              <a href="?page={{ page_obj.previous_page_number }}" 
+                 class="relative inline-flex items-center rounded-l-md border border-gray-300 bg-white px-2 py-2 text-sm font-medium text-gray-500 hover:bg-gray-50 focus-visible">
+                <span class="sr-only">Anterior</span>
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                </svg>
+              </a>
+            {% endif %}
+            
+            {% for num in page_obj.paginator.page_range %}
+              {% if page_obj.number == num %}
+                <span class="relative inline-flex items-center border border-purple-500 bg-purple-50 px-4 py-2 text-sm font-medium text-purple-600">
+                  {{ num }}
+                </span>
+              {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <a href="?page={{ num }}" 
+                   class="relative inline-flex items-center border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-500 hover:bg-gray-50 focus-visible">
+                  {{ num }}
+                </a>
+              {% endif %}
+            {% endfor %}
+            
+            {% if page_obj.has_next %}
+              <a href="?page={{ page_obj.next_page_number }}" 
+                 class="relative inline-flex items-center rounded-r-md border border-gray-300 bg-white px-2 py-2 text-sm font-medium text-gray-500 hover:bg-gray-50 focus-visible">
+                <span class="sr-only">Próxima</span>
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+              </a>
+            {% endif %}
+          </nav>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

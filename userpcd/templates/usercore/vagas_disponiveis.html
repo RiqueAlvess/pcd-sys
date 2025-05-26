@@ -1,0 +1,377 @@
+{% extends "usercore/base.html" %}
+{% block title %}Vagas Disponíveis - Portal PCD{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900">Vagas Disponíveis</h1>
+      <p class="text-gray-600 mt-1">Encontre oportunidades inclusivas que combinam com seu perfil</p>
+    </div>
+    
+    <div class="mt-4 sm:mt-0">
+      <button onclick="openModal('filtros-modal')" 
+              class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus-visible">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+        </svg>
+        Filtros
+      </button>
+    </div>
+  </div>
+
+  <!-- Filtros Ativos -->
+  {% if filtros.modalidade or filtros.cidade or filtros.uf %}
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+          </svg>
+          <span class="text-sm font-medium text-blue-800">Filtros ativos:</span>
+          
+          {% if filtros.modalidade %}
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+              {{ filtros.modalidade|capfirst }}
+            </span>
+          {% endif %}
+          
+          {% if filtros.cidade %}
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+              {{ filtros.cidade }}
+            </span>
+          {% endif %}
+          
+          {% if filtros.uf %}
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+              {{ filtros.uf }}
+            </span>
+          {% endif %}
+        </div>
+        
+        <a href="{% url 'vagas_disponiveis' %}" 
+           class="text-sm text-blue-600 hover:text-blue-700 focus-visible">
+          Limpar filtros
+        </a>
+      </div>
+    </div>
+  {% endif %}
+
+  <!-- Lista de Vagas -->
+  <div class="space-y-4">
+    {% for vaga in page_obj %}
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+        <div class="flex items-start justify-between">
+          <div class="flex-1">
+            <!-- Título e Badges -->
+            <div class="flex items-start justify-between mb-3">
+              <div>
+                <h3 class="text-lg font-semibold text-gray-900 mb-1">{{ vaga.titulo }}</h3>
+                <p class="text-base text-gray-700 font-medium mb-2">{{ vaga.empresa.razao_social }}</p>
+              </div>
+              
+              <div class="flex items-center space-x-2 ml-4">
+                {% if vaga.acessivel %}
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"
+                        aria-label="Vaga acessível">
+                    <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                    </svg>
+                    Acessível
+                  </span>
+                {% endif %}
+                
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                           {% if vaga.modalidade == 'remoto' %}bg-blue-100 text-blue-800
+                           {% elif vaga.modalidade == 'hibrido' %}bg-purple-100 text-purple-800
+                           {% else %}bg-gray-100 text-gray-800{% endif %}">
+                  {{ vaga.get_modalidade_display }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Informações -->
+            <div class="flex items-center space-x-6 text-sm text-gray-600 mb-4">
+              <span class="flex items-center">
+                <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+                {{ vaga.cidade }}, {{ vaga.uf }}
+              </span>
+              
+              {% if vaga.salario_min and vaga.salario_max %}
+                <span class="flex items-center">
+                  <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"/>
+                  </svg>
+                  R$ {{ vaga.salario_min|floatformat:0 }} - R$ {{ vaga.salario_max|floatformat:0 }}
+                </span>
+              {% elif vaga.salario_min %}
+                <span class="flex items-center">
+                  <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"/>
+                  </svg>
+                  A partir de R$ {{ vaga.salario_min|floatformat:0 }}
+                </span>
+              {% endif %}
+              
+              <span class="flex items-center">
+                <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                {{ vaga.criada_em|timesince }} atrás
+              </span>
+            </div>
+
+            <!-- Descrição -->
+            <div class="mb-4">
+              <p class="text-gray-700 text-sm leading-relaxed">
+                {{ vaga.descricao|truncatewords:30 }}
+              </p>
+            </div>
+
+            <!-- Requisitos (se houver) -->
+            {% if vaga.requisitos %}
+              <div class="mb-4">
+                <h4 class="text-sm font-medium text-gray-900 mb-2">Principais requisitos:</h4>
+                <p class="text-sm text-gray-600 leading-relaxed">
+                  {{ vaga.requisitos|truncatewords:20 }}
+                </p>
+              </div>
+            {% endif %}
+
+            <!-- Benefícios (se houver) -->
+            {% if vaga.beneficios %}
+              <div class="mb-4">
+                <h4 class="text-sm font-medium text-gray-900 mb-2">Benefícios:</h4>
+                <p class="text-sm text-gray-600 leading-relaxed">
+                  {{ vaga.beneficios|truncatewords:15 }}
+                </p>
+              </div>
+            {% endif %}
+          </div>
+
+          <!-- Botão de Candidatura -->
+          <div class="ml-6 flex-shrink-0">
+            <button onclick="candidatarVaga({{ vaga.id }})" 
+                    class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-medium focus-visible transition-colors flex items-center"
+                    aria-label="Candidatar-se à vaga {{ vaga.titulo }}">
+              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+              </svg>
+              Candidatar-me
+            </button>
+          </div>
+        </div>
+      </div>
+    {% empty %}
+      <div class="text-center py-12">
+        <svg class="mx-auto h-16 w-16 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 002 2h2a2 2 0 002-2V6"/>
+        </svg>
+        <h3 class="text-lg font-medium text-gray-900 mb-2">Nenhuma vaga encontrada</h3>
+        <p class="text-gray-500 mb-4">
+          {% if filtros.modalidade or filtros.cidade or filtros.uf %}
+            Tente ajustar os filtros ou remova-os para ver mais vagas.
+          {% else %}
+            No momento não há vagas disponíveis que correspondam ao seu perfil.
+          {% endif %}
+        </p>
+        {% if filtros.modalidade or filtros.cidade or filtros.uf %}
+          <a href="{% url 'vagas_disponiveis' %}" 
+             class="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 focus-visible">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            </svg>
+            Ver Todas as Vagas
+          </a>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+
+  <!-- Paginação -->
+  {% if page_obj.has_other_pages %}
+    <div class="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6 rounded-lg">
+      <div class="flex flex-1 justify-between sm:hidden">
+        {% if page_obj.has_previous %}
+          <a href="?page={{ page_obj.previous_page_number }}{% if filtros.modalidade %}&modalidade={{ filtros.modalidade }}{% endif %}{% if filtros.cidade %}&cidade={{ filtros.cidade }}{% endif %}{% if filtros.uf %}&uf={{ filtros.uf }}{% endif %}" 
+             class="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+            Anterior
+          </a>
+        {% endif %}
+        {% if page_obj.has_next %}
+          <a href="?page={{ page_obj.next_page_number }}{% if filtros.modalidade %}&modalidade={{ filtros.modalidade }}{% endif %}{% if filtros.cidade %}&cidade={{ filtros.cidade }}{% endif %}{% if filtros.uf %}&uf={{ filtros.uf }}{% endif %}" 
+             class="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+            Próxima
+          </a>
+        {% endif %}
+      </div>
+      
+      <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+        <div>
+          <p class="text-sm text-gray-700">
+            Mostrando
+            <span class="font-medium">{{ page_obj.start_index }}</span>
+            a
+            <span class="font-medium">{{ page_obj.end_index }}</span>
+            de
+            <span class="font-medium">{{ page_obj.paginator.count }}</span>
+            vagas
+          </p>
+        </div>
+        
+        <div>
+          <nav class="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Paginação">
+            {% if page_obj.has_previous %}
+              <a href="?page={{ page_obj.previous_page_number }}{% if filtros.modalidade %}&modalidade={{ filtros.modalidade }}{% endif %}{% if filtros.cidade %}&cidade={{ filtros.cidade }}{% endif %}{% if filtros.uf %}&uf={{ filtros.uf }}{% endif %}" 
+                 class="relative inline-flex items-center rounded-l-md border border-gray-300 bg-white px-2 py-2 text-sm font-medium text-gray-500 hover:bg-gray-50 focus-visible">
+                <span class="sr-only">Anterior</span>
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                </svg>
+              </a>
+            {% endif %}
+            
+            {% for num in page_obj.paginator.page_range %}
+              {% if page_obj.number == num %}
+                <span class="relative inline-flex items-center border border-purple-500 bg-purple-50 px-4 py-2 text-sm font-medium text-purple-600">
+                  {{ num }}
+                </span>
+              {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <a href="?page={{ num }}{% if filtros.modalidade %}&modalidade={{ filtros.modalidade }}{% endif %}{% if filtros.cidade %}&cidade={{ filtros.cidade }}{% endif %}{% if filtros.uf %}&uf={{ filtros.uf }}{% endif %}" 
+                   class="relative inline-flex items-center border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-500 hover:bg-gray-50 focus-visible">
+                  {{ num }}
+                </a>
+              {% endif %}
+            {% endfor %}
+            
+            {% if page_obj.has_next %}
+              <a href="?page={{ page_obj.next_page_number }}{% if filtros.modalidade %}&modalidade={{ filtros.modalidade }}{% endif %}{% if filtros.cidade %}&cidade={{ filtros.cidade }}{% endif %}{% if filtros.uf %}&uf={{ filtros.uf }}{% endif %}" 
+                 class="relative inline-flex items-center rounded-r-md border border-gray-300 bg-white px-2 py-2 text-sm font-medium text-gray-500 hover:bg-gray-50 focus-visible">
+                <span class="sr-only">Próxima</span>
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+              </a>
+            {% endif %}
+          </nav>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+</div>
+
+<!-- Modal de Filtros -->
+<div id="filtros-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 hidden">
+  <div class="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-lg font-medium text-gray-900">Filtrar Vagas</h3>
+      <button onclick="closeModal('filtros-modal')" class="text-gray-400 hover:text-gray-600 focus-visible">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    
+    <form method="GET" class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Modalidade</label>
+        <select name="modalidade" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500">
+          <option value="">Todas</option>
+          {% for modalidade in modalidades %}
+            <option value="{{ modalidade.0 }}" {% if filtros.modalidade == modalidade.0 %}selected{% endif %}>
+              {{ modalidade.1 }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Cidade</label>
+        <input type="text" name="cidade" value="{{ filtros.cidade }}" 
+               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500"
+               placeholder="Digite a cidade">
+      </div>
+      
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Estado (UF)</label>
+        <input type="text" name="uf" value="{{ filtros.uf }}" 
+               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500"
+               placeholder="Ex: SP, RJ, MG" maxlength="2">
+      </div>
+      
+      <div class="flex justify-end space-x-3 pt-4">
+        <a href="{% url 'vagas_disponiveis' %}" 
+           class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus-visible">
+          Limpar
+        </a>
+        <button type="submit" 
+                class="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 focus-visible">
+          Aplicar Filtros
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Funções de Modal
+  function openModal(modalId) {
+    document.getElementById(modalId).classList.remove('hidden');
+    document.body.classList.add('overflow-hidden');
+  }
+
+  function closeModal(modalId) {
+    document.getElementById(modalId).classList.add('hidden');
+    document.body.classList.remove('overflow-hidden');
+  }
+
+  // Fechar modal ao clicar no overlay
+  document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('bg-gray-600')) {
+      closeModal('filtros-modal');
+    }
+  });
+
+  // Candidatar-se a vaga
+  function candidatarVaga(vagaId) {
+    if (!confirm('Deseja se candidatar a esta vaga?')) {
+      return;
+    }
+    
+    fetch(`{% url 'candidatar_vaga' 0 %}`.replace('0', vagaId), {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': '{{ csrf_token }}',
+        'Content-Type': 'application/json'
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        showToast(data.message, 'success');
+        // Remover vaga da lista ou marcar como candidatado
+        setTimeout(() => location.reload(), 1000);
+      } else {
+        showToast(data.error || 'Erro ao candidatar-se', 'error');
+      }
+    })
+    .catch(error => {
+      showToast('Erro de conexão', 'error');
+    });
+  }
+
+  // Tecla ESC para fechar modal
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      closeModal('filtros-modal');
+    }
+  });
+</script>
+{% endblock %}

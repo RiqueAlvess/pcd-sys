@@ -1,0 +1,406 @@
+{% extends "usercore/base.html" %}
+{% block title %}Notificações - Portal PCD{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900">Notificações</h1>
+      <p class="text-gray-600 mt-1">Acompanhe as atualizações sobre suas candidaturas e perfil</p>
+    </div>
+    
+    <div class="mt-4 sm:mt-0">
+      <button onclick="marcarTodasComoLidas()" 
+              class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus-visible">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        Marcar todas como lidas
+      </button>
+    </div>
+  </div>
+
+  <!-- Filtros de Tipo -->
+  <div class="bg-white rounded-lg border border-gray-200 p-4">
+    <div class="flex flex-wrap items-center gap-2">
+      <span class="text-sm font-medium text-gray-700 mr-2">Filtrar por tipo:</span>
+      
+      <button onclick="filtrarNotificacoes('todas')" 
+              class="filter-btn active px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800 hover:bg-purple-200 focus-visible transition-colors"
+              data-filter="todas">
+        Todas
+      </button>
+      
+      <button onclick="filtrarNotificacoes('candidatura')" 
+              class="filter-btn px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 focus-visible transition-colors"
+              data-filter="candidatura">
+        Candidaturas
+      </button>
+      
+      <button onclick="filtrarNotificacoes('documento')" 
+              class="filter-btn px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 focus-visible transition-colors"
+              data-filter="documento">
+        Documentos
+      </button>
+      
+      <button onclick="filtrarNotificacoes('sistema')" 
+              class="filter-btn px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 focus-visible transition-colors"
+              data-filter="sistema">
+        Sistema
+      </button>
+    </div>
+  </div>
+
+  <!-- Lista de Notificações -->
+  <div class="space-y-3">
+    {% for notificacao in page_obj %}
+      <div class="notification-item bg-white rounded-lg shadow-sm border 
+                  {% if not notificacao.lida %}border-purple-200 bg-purple-50{% else %}border-gray-200{% endif %} 
+                  p-4 hover:shadow-md transition-shadow"
+           data-tipo="{{ notificacao.tipo }}"
+           data-id="{{ notificacao.id }}">
+        
+        <div class="flex items-start space-x-4">
+          <!-- Ícone da Notificação -->
+          <div class="flex-shrink-0">
+            <div class="w-10 h-10 rounded-full flex items-center justify-center
+                      {% if notificacao.tipo == 'candidatura' %}bg-blue-100
+                      {% elif notificacao.tipo == 'documento' %}bg-green-100
+                      {% else %}bg-gray-100{% endif %}">
+              {% if notificacao.tipo == 'candidatura' %}
+                <svg class="w-5 h-5 {% if notificacao.lida %}text-blue-600{% else %}text-blue-700{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                </svg>
+              {% elif notificacao.tipo == 'documento' %}
+                <svg class="w-5 h-5 {% if notificacao.lida %}text-green-600{% else %}text-green-700{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+              {% else %}
+                <svg class="w-5 h-5 {% if notificacao.lida %}text-gray-600{% else %}text-gray-700{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Conteúdo da Notificação -->
+          <div class="flex-1 min-w-0">
+            <div class="flex items-start justify-between">
+              <div class="flex-1">
+                <h3 class="text-sm font-semibold {% if not notificacao.lida %}text-gray-900{% else %}text-gray-700{% endif %}">
+                  {{ notificacao.titulo }}
+                </h3>
+                <p class="text-sm {% if not notificacao.lida %}text-gray-800{% else %}text-gray-600{% endif %} mt-1 leading-relaxed">
+                  {{ notificacao.mensagem }}
+                </p>
+                
+                <!-- Metadados -->
+                <div class="flex items-center space-x-4 mt-2 text-xs text-gray-500">
+                  <span class="flex items-center">
+                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    {{ notificacao.criada_em|timesince }} atrás
+                  </span>
+                  
+                  <span class="flex items-center">
+                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a1.994 1.994 0 01-1.414.586H7a4 4 0 01-4-4V7a4 4 0 014-4z"/>
+                    </svg>
+                    {{ notificacao.get_tipo_display }}
+                  </span>
+                  
+                  {% if not notificacao.lida %}
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                      <svg class="w-2 h-2 mr-1 fill-current" viewBox="0 0 8 8">
+                        <circle cx="4" cy="4" r="3"/>
+                      </svg>
+                      Nova
+                    </span>
+                  {% endif %}
+                </div>
+              </div>
+              
+              <!-- Ações -->
+              <div class="flex items-center space-x-2 ml-4">
+                {% if not notificacao.lida %}
+                  <button onclick="marcarComoLida({{ notificacao.id }})" 
+                          class="text-xs text-purple-600 hover:text-purple-700 focus-visible p-1"
+                          aria-label="Marcar como lida">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                  </button>
+                {% endif %}
+                
+                <button onclick="excluirNotificacao({{ notificacao.id }})" 
+                        class="text-xs text-gray-400 hover:text-red-600 focus-visible p-1"
+                        aria-label="Excluir notificação">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Indicador Visual para Não Lidas -->
+        {% if not notificacao.lida %}
+          <div class="absolute left-0 top-0 bottom-0 w-1 bg-purple-600 rounded-l-lg"></div>
+        {% endif %}
+      </div>
+    {% empty %}
+      <div class="text-center py-12">
+        <div class="mx-auto h-16 w-16 text-gray-400 mb-4">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+          </svg>
+        </div>
+        <h3 class="text-lg font-medium text-gray-900 mb-2">Nenhuma notificação encontrada</h3>
+        <p class="text-gray-500 mb-4">
+          Quando houver atualizações sobre suas candidaturas ou perfil, elas aparecerão aqui.
+        </p>
+        <a href="{% url 'dashboard_pcd' %}" 
+           class="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 focus-visible transition-colors">
+          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"/>
+          </svg>
+          Voltar ao Dashboard
+        </a>
+      </div>
+    {% endfor %}
+  </div>
+
+  <!-- Paginação -->
+  {% if page_obj.has_other_pages %}
+    <div class="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6 rounded-lg">
+      <div class="flex flex-1 justify-between sm:hidden">
+        {% if page_obj.has_previous %}
+          <a href="?page={{ page_obj.previous_page_number }}" 
+             class="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus-visible">
+            Anterior
+          </a>
+        {% endif %}
+        {% if page_obj.has_next %}
+          <a href="?page={{ page_obj.next_page_number }}" 
+             class="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus-visible">
+            Próxima
+          </a>
+        {% endif %}
+      </div>
+      
+      <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+        <div>
+          <p class="text-sm text-gray-700">
+            Mostrando
+            <span class="font-medium">{{ page_obj.start_index }}</span>
+            a
+            <span class="font-medium">{{ page_obj.end_index }}</span>
+            de
+            <span class="font-medium">{{ page_obj.paginator.count }}</span>
+            notificações
+          </p>
+        </div>
+        
+        <div>
+          <nav class="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Paginação">
+            {% if page_obj.has_previous %}
+              <a href="?page={{ page_obj.previous_page_number }}" 
+                 class="relative inline-flex items-center rounded-l-md border border-gray-300 bg-white px-2 py-2 text-sm font-medium text-gray-500 hover:bg-gray-50 focus-visible">
+                <span class="sr-only">Anterior</span>
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                </svg>
+              </a>
+            {% endif %}
+            
+            {% for num in page_obj.paginator.page_range %}
+              {% if page_obj.number == num %}
+                <span class="relative inline-flex items-center border border-purple-500 bg-purple-50 px-4 py-2 text-sm font-medium text-purple-600">
+                  {{ num }}
+                </span>
+              {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <a href="?page={{ num }}" 
+                   class="relative inline-flex items-center border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-500 hover:bg-gray-50 focus-visible">
+                  {{ num }}
+                </a>
+              {% endif %}
+            {% endfor %}
+            
+            {% if page_obj.has_next %}
+              <a href="?page={{ page_obj.next_page_number }}" 
+                 class="relative inline-flex items-center rounded-r-md border border-gray-300 bg-white px-2 py-2 text-sm font-medium text-gray-500 hover:bg-gray-50 focus-visible">
+                <span class="sr-only">Próxima</span>
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+              </a>
+            {% endif %}
+          </nav>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Filtrar notificações por tipo
+  function filtrarNotificacoes(tipo) {
+    const notificacoes = document.querySelectorAll('.notification-item');
+    const botoes = document.querySelectorAll('.filter-btn');
+    
+    // Atualizar botões ativos
+    botoes.forEach(btn => {
+      btn.classList.remove('active', 'bg-purple-100', 'text-purple-800');
+      btn.classList.add('bg-gray-100', 'text-gray-700');
+    });
+    
+    const botaoAtivo = document.querySelector(`[data-filter="${tipo}"]`);
+    botaoAtivo.classList.remove('bg-gray-100', 'text-gray-700');
+    botaoAtivo.classList.add('active', 'bg-purple-100', 'text-purple-800');
+    
+    // Filtrar notificações
+    notificacoes.forEach(notif => {
+      if (tipo === 'todas' || notif.dataset.tipo === tipo) {
+        notif.style.display = 'block';
+      } else {
+        notif.style.display = 'none';
+      }
+    });
+  }
+
+  // Marcar notificação individual como lida
+  function marcarComoLida(notificacaoId) {
+    fetch('{% url "notificacoes" %}', {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': '{{ csrf_token }}',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        'action': 'marcar_lida',
+        'notificacao_id': notificacaoId
+      })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        const notifElement = document.querySelector(`[data-id="${notificacaoId}"]`);
+        if (notifElement) {
+          // Remover estilos de "não lida"
+          notifElement.classList.remove('border-purple-200', 'bg-purple-50');
+          notifElement.classList.add('border-gray-200');
+          
+          // Remover badge "Nova"
+          const novaBadge = notifElement.querySelector('.bg-purple-100.text-purple-800');
+          if (novaBadge) {
+            novaBadge.remove();
+          }
+          
+          // Remover botão "marcar como lida"
+          const botaoMarcar = notifElement.querySelector('button[onclick*="marcarComoLida"]');
+          if (botaoMarcar) {
+            botaoMarcar.remove();
+          }
+          
+          // Remover indicador visual
+          const indicador = notifElement.querySelector('.bg-purple-600');
+          if (indicador) {
+            indicador.remove();
+          }
+        }
+        
+        showToast('Notificação marcada como lida', 'success');
+      } else {
+        showToast('Erro ao marcar notificação', 'error');
+      }
+    })
+    .catch(error => {
+      showToast('Erro de conexão', 'error');
+    });
+  }
+
+  // Marcar todas as notificações como lidas
+  function marcarTodasComoLidas() {
+    if (!confirm('Deseja marcar todas as notificações como lidas?')) {
+      return;
+    }
+    
+    fetch('{% url "notificacoes" %}', {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': '{{ csrf_token }}',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        'action': 'marcar_todas_lidas'
+      })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        showToast('Todas as notificações foram marcadas como lidas', 'success');
+        setTimeout(() => location.reload(), 1000);
+      } else {
+        showToast('Erro ao marcar notificações', 'error');
+      }
+    })
+    .catch(error => {
+      showToast('Erro de conexão', 'error');
+    });
+  }
+
+  // Excluir notificação
+  function excluirNotificacao(notificacaoId) {
+    if (!confirm('Deseja excluir esta notificação?')) {
+      return;
+    }
+    
+    fetch('{% url "notificacoes" %}', {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': '{{ csrf_token }}',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        'action': 'excluir',
+        'notificacao_id': notificacaoId
+      })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        const notifElement = document.querySelector(`[data-id="${notificacaoId}"]`);
+        if (notifElement) {
+          notifElement.style.animation = 'fadeOut 0.3s ease-out';
+          setTimeout(() => {
+            notifElement.remove();
+          }, 300);
+        }
+        
+        showToast('Notificação excluída', 'success');
+      } else {
+        showToast('Erro ao excluir notificação', 'error');
+      }
+    })
+    .catch(error => {
+      showToast('Erro de conexão', 'error');
+    });
+  }
+
+  // CSS para animação de fadeOut
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes fadeOut {
+      from { opacity: 1; transform: translateX(0); }
+      to { opacity: 0; transform: translateX(100%); }
+    }
+  `;
+  document.head.appendChild(style);
+</script>
+{% endblock %}

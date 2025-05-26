@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}Escolha seu Perfil - Portal PCD{% endblock %}
+{% block body %}
+<div class="min-h-screen flex flex-col items-center justify-center px-4 py-12 relative">
+  <!-- Header -->
+  <div class="text-center mb-12 z-10">
+    <div class="flex justify-center mb-6">
+      <div class="p-4 rounded-full gradient-bg text-white">
+        <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+        </svg>
+      </div>
+    </div>
+    <h1 class="text-4xl md:text-5xl font-bold text-gray-800 mb-4">
+      Portal <span class="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">PCD</span>
+    </h1>
+    <p class="text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
+      Conectamos talentos únicos com oportunidades inclusivas. 
+      <br>Escolha como você deseja fazer parte dessa transformação.
+    </p>
+  </div>
+
+  <!-- Cards de Escolha -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-4xl w-full mb-8 z-10">
+    <!-- Card PCD -->
+    <a href="{% url 'cadastro_pcd' %}" class="group hover-scale">
+      <div class="glass-effect rounded-2xl p-8 text-center shadow-xl hover:shadow-2xl transition-all duration-300 border-l-4 border-purple-500">
+        <div class="flex justify-center mb-6">
+          <div class="p-4 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 text-white group-hover:scale-110 transition-transform duration-300">
+            <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+            </svg>
+          </div>
+        </div>
+        <h3 class="text-2xl font-bold text-purple-600 mb-4 group-hover:text-purple-700 transition-colors">
+          Sou Pessoa com Deficiência
+        </h3>
+        <p class="text-gray-600 mb-6 leading-relaxed">
+          Encontre oportunidades de trabalho inclusivas, conecte-se com empresas comprometidas 
+          com a diversidade e mostre seu talento.
+        </p>
+        <div class="flex items-center justify-center text-purple-500 font-medium group-hover:text-purple-600 transition-colors">
+          <span>Começar jornada</span>
+          <svg class="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+          </svg>
+        </div>
+      </div>
+    </a>
+
+    <!-- Card Empresa -->
+    <a href="{% url 'cadastro_empresa' %}" class="group hover-scale">
+      <div class="glass-effect rounded-2xl p-8 text-center shadow-xl hover:shadow-2xl transition-all duration-300 border-l-4 border-green-500">
+        <div class="flex justify-center mb-6">
+          <div class="p-4 rounded-full bg-gradient-to-br from-green-500 to-green-600 text-white group-hover:scale-110 transition-transform duration-300">
+            <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+            </svg>
+          </div>
+        </div>
+        <h3 class="text-2xl font-bold text-green-600 mb-4 group-hover:text-green-700 transition-colors">
+          Sou uma Empresa
+        </h3>
+        <p class="text-gray-600 mb-6 leading-relaxed">
+          Publique vagas inclusivas, encontre talentos diversos e construa um ambiente 
+          de trabalho mais justo e produtivo.
+        </p>
+        <div class="flex items-center justify-center text-green-500 font-medium group-hover:text-green-600 transition-colors">
+          <span>Encontrar talentos</span>
+          <svg class="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+          </svg>
+        </div>
+      </div>
+    </a>
+  </div>
+
+  <!-- Footer Login -->
+  <div class="text-center z-10">
+    <p class="text-gray-500 mb-3">Já faz parte da nossa comunidade?</p>
+    <a href="{% url 'login' %}" 
+       class="inline-flex items-center px-6 py-3 bg-white hover:bg-gray-50 text-gray-700 font-medium rounded-full shadow-md hover:shadow-lg transition-all duration-300 border border-gray-200">
+      <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
+      </svg>
+      Fazer Login
+    </a>
+  </div>
+
+  
+</div>
+{% endblock %}

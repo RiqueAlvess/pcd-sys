@@ -17,6 +17,12 @@ def criar_empresa_extendida(sender, instance, created, **kwargs):
             empresa=instance,
             defaults={'percentual_completude': 60}
         )
+    else:
+        # Ensure it exists even when updating
+        EmpresaExtendida.objects.get_or_create(
+            empresa=instance,
+            defaults={'percentual_completude': 60}
+        )
 
 
 @receiver(post_save, sender=Empresa)
@@ -42,15 +48,14 @@ def criar_vaga_extendida(sender, instance, created, **kwargs):
     Cria automaticamente uma VagaExtendida quando uma Vaga é criada
     """
     if created:
-        VagaExtendida.objects.get_or_create(
-            vaga=instance,
-            defaults={
-                'tipo': 'emprego',
-                'numero_vagas': 1,
-                'status_medico': 'pendente'
-            }
-        )
-
+        # Verificar se já existe uma VagaExtendida para esta vaga
+        if not VagaExtendida.objects.filter(vaga=instance).exists():
+            VagaExtendida.objects.create(
+                vaga=instance,
+                tipo='emprego',
+                numero_vagas=1,
+                status_medico='pendente'
+            )
 
 @receiver(post_save, sender=Candidatura)
 def notificar_empresa_novo_candidato(sender, instance, created, **kwargs):

@@ -40,7 +40,25 @@ def dashboard_empresa(request):
         messages.error(request, 'Acesso negado.')
         return redirect('landing')
 
-    empresa = get_object_or_404(Empresa, user=request.user)
+    # Try to get the empresa, create one if it doesn't exist
+    try:
+        empresa = Empresa.objects.get(user=request.user)
+    except Empresa.DoesNotExist:
+        # Create a basic empresa object for the user
+        try:
+            empresa = Empresa.objects.create(
+                user=request.user,
+                razao_social=f"Empresa de {request.user.username}",
+                telefone_principal="Não informado",
+                cnpj="Não informado",
+                cnae_principal="Não informado",
+                tamanho="1-10"
+            )
+            messages.warning(request, 'Detectamos um problema com o seu perfil empresarial. Por favor, atualize suas informações.')
+        except Exception as e:
+            messages.error(request, f'Erro ao recuperar dados da empresa: {str(e)}')
+            return redirect('landing')
+
     empresa_ext = _get_or_create_empresa_extendida(empresa)
     
     # Atualizar completude
@@ -195,15 +213,26 @@ def nova_vaga(request):
                 status='ativa'
             )
             
-            # Criar extensão da vaga
-            vaga_ext = VagaExtendida.objects.create(
+            # Usar get_or_create em vez de create para evitar duplicações
+            vaga_ext, created = VagaExtendida.objects.get_or_create(
                 vaga=vaga,
-                tipo=tipo,
-                numero_vagas=int(numero_vagas) if numero_vagas else 1,
-                duracao_capacitacao=duracao_capacitacao if tipo == 'capacitacao' else '',
-                acesso_transporte_publico=acesso_transporte_publico,
-                status_medico='pendente'
+                defaults={
+                    'tipo': tipo,
+                    'numero_vagas': int(numero_vagas) if numero_vagas else 1,
+                    'duracao_capacitacao': duracao_capacitacao if tipo == 'capacitacao' else '',
+                    'acesso_transporte_publico': acesso_transporte_publico,
+                    'status_medico': 'pendente'
+                }
             )
+            
+            # Se a vaga_ext já existia, atualize seus campos
+            if not created:
+                vaga_ext.tipo = tipo
+                vaga_ext.numero_vagas = int(numero_vagas) if numero_vagas else 1
+                vaga_ext.duracao_capacitacao = duracao_capacitacao if tipo == 'capacitacao' else ''
+                vaga_ext.acesso_transporte_publico = acesso_transporte_publico
+                vaga_ext.status_medico = 'pendente'
+                vaga_ext.save()
             
             # Definir deficiências elegíveis
             if deficiencias_elegiveis:
@@ -229,7 +258,6 @@ def nova_vaga(request):
     }
     
     return render(request, 'usercompany/nova_vaga.html', context)
-
 
 @login_required
 def detalhes_vaga(request, vaga_id):

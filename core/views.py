@@ -61,6 +61,27 @@ def login_view(request):
         messages.add_message(request, constants.SUCCESS,
                              'Login realizado com sucesso.')
         
+        # Se for empresa, verificar se tem perfil
+        if user.is_empresa():
+            try:
+                Empresa.objects.get(user=user)
+            except Empresa.DoesNotExist:
+                # Criar um perfil básico se não existir
+                try:
+                    Empresa.objects.create(
+                        user=user,
+                        razao_social=f"Empresa de {user.username}",
+                        telefone_principal="Não informado",
+                        cnpj="Não informado", 
+                        cnae_principal="Não informado",
+                        tamanho="1-10"
+                    )
+                    messages.add_message(request, constants.WARNING,
+                                      'Detectamos que seu perfil de empresa estava incompleto. Por favor, atualize suas informações.')
+                except Exception as e:
+                    messages.add_message(request, constants.ERROR,
+                                      f'Erro ao recuperar seu perfil: {str(e)}')
+        
         # Redirecionamento inteligente e seguro
         return smart_redirect_after_login(user, request)
 

@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+from django.templatetags.static import static
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -31,6 +32,10 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'unfold',
+    'unfold.contrib.filters',
+    'unfold.contrib.forms',
+    'unfold.contrib.import_export',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -135,3 +140,126 @@ MESSAGE_TAGS = {
     message_constants.SUCCESS: 'bg-green-50 text-green-700',
     message_constants.ERROR: 'bg-red-50 text-red-700',
 }
+
+# Unfold Admin Configuration
+UNFOLD = {
+    "SITE_TITLE": "Portal PCD Admin",
+    "SITE_HEADER": "Sistema de Enquadramento PCD",
+    "SITE_URL": "/",
+    "SITE_ICON": {
+        "light": lambda request: static("icon.png"),
+        "dark": lambda request: static("icon.png"),
+    },
+    "COLORS": {
+        "primary": {
+            "50": "134 239 172",
+            "100": "74 222 128",
+            "200": "34 197 94",
+            "300": "22 163 74",
+            "400": "21 128 61",
+            "500": "22 101 52",
+            "600": "20 83 45",
+            "700": "22 70 42",
+            "800": "20 55 36",
+            "900": "20 48 34",
+            "950": "5 20 15",
+        },
+    },
+    "SIDEBAR": {
+        "show_search": True,
+        "show_all_applications": True,
+        "navigation": [
+            {
+                "title": "Dashboard",
+                "icon": "dashboard",
+                "link": lambda request: "/admin/",
+            },
+            {
+                "title": "Usuários",
+                "icon": "people",
+                "items": [
+                    {
+                        "title": "Usuários",
+                        "link": lambda request: "/admin/core/user/",
+                    },
+                    {
+                        "title": "Empresas",
+                        "link": lambda request: "/admin/core/empresa/",
+                    },
+                    {
+                        "title": "PCDs",
+                        "link": lambda request: "/admin/core/pcdprofile/",
+                    },
+                    {
+                        "title": "Médicos",
+                        "link": lambda request: "/admin/core/medicoprofile/",
+                    },
+                ],
+            },
+            {
+                "title": "Vagas & Candidaturas",
+                "icon": "work",
+                "items": [
+                    {
+                        "title": "Vagas",
+                        "link": lambda request: "/admin/userpcd/vaga/",
+                    },
+                    {
+                        "title": "Candidaturas",
+                        "link": lambda request: "/admin/userpcd/candidatura/",
+                    },
+                ],
+            },
+            {
+                "title": "Documentos",
+                "icon": "description",
+                "link": lambda request: "/admin/userpcd/documento/",
+            },
+            {
+                "title": "Notificações",
+                "icon": "notifications",
+                "items": [
+                    {
+                        "title": "Notificações PCD",
+                        "link": lambda request: "/admin/userpcd/notificacao/",
+                    },
+                    {
+                        "title": "Notificações Empresa",
+                        "link": lambda request: "/admin/usercompany/notificacaoempresa/",
+                    },
+                ],
+            },
+            {
+                "title": "Deficiências",
+                "icon": "accessible",
+                "link": lambda request: "/admin/core/categoriadeficiencia/",
+            },
+        ],
+    },
+    "TABS": [
+        {
+            "models": [
+                "core.user",
+                "core.empresa",
+                "core.pcdprofile",
+            ],
+            "items": [
+                {
+                    "title": "Usuários",
+                    "link": lambda request: "/admin/core/user/",
+                },
+                {
+                    "title": "Empresas",
+                    "link": lambda request: "/admin/core/empresa/",
+                },
+                {
+                    "title": "PCDs",
+                    "link": lambda request: "/admin/core/pcdprofile/",
+                },
+            ],
+        },
+    ],
+}
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'

@@ -169,3 +169,54 @@ class PerfilPCDExtendido(models.Model):
         self.percentual_completude = min(int(completude), 100)
         self.save()
         return self.percentual_completude
+
+
+class Conversa(models.Model):
+    """Conversa entre PCD e Empresa"""
+    pcd = models.ForeignKey(PCDProfile, on_delete=models.CASCADE, related_name='conversas_pcd')
+    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name='conversas_empresa')
+    vaga = models.ForeignKey(Vaga, on_delete=models.SET_NULL, null=True, blank=True, related_name='conversas')
+    candidatura = models.ForeignKey('Candidatura', on_delete=models.SET_NULL, null=True, blank=True, related_name='conversas')
+    criada_em = models.DateTimeField(auto_now_add=True)
+    atualizada_em = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-atualizada_em']
+        unique_together = ['pcd', 'empresa', 'vaga']
+
+    def __str__(self):
+        return f"Conversa: {self.pcd.user.username} - {self.empresa.razao_social}"
+
+    def mensagens_nao_lidas_pcd(self):
+        """Retorna número de mensagens não lidas pelo PCD"""
+        return self.mensagens.filter(remetente_empresa=True, lida=False).count()
+
+    def mensagens_nao_lidas_empresa(self):
+        """Retorna número de mensagens não lidas pela empresa"""
+        return self.mensagens.filter(remetente_empresa=False, lida=False).count()
+
+    def ultima_mensagem(self):
+        """Retorna a última mensagem da conversa"""
+        return self.mensagens.order_by('-enviada_em').first()
+
+
+class Mensagem(models.Model):
+    """Mensagem trocada entre PCD e Empresa"""
+    conversa = models.ForeignKey(Conversa, on_delete=models.CASCADE, related_name='mensagens')
+    remetente_empresa = models.BooleanField(default=False, help_text="True se remetente é empresa, False se é PCD")
+    conteudo = models.TextField()
+    lida = models.BooleanField(default=False)
+    enviada_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['enviada_em']
+
+    def __str__(self):
+        remetente = "Empresa" if self.remetente_empresa else "PCD"
+        return f"{remetente}: {self.conteudo[:50]}..."
+
+    def marcar_como_lida(self):
+        """Marca a mensagem como lida"""
+        if not self.lida:
+            self.lida = True
+            self.save()

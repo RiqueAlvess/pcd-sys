@@ -1,11 +1,13 @@
 from django.contrib import admin
+from unfold.admin import ModelAdmin
+from unfold.contrib.filters.admin import RangeDateFilter
 from django.utils.html import format_html
 from .models import EmpresaExtendida, VagaExtendida, ProcessoSeletivo, NotificacaoEmpresa
 from userpcd.models import Vaga
 
 
 @admin.register(EmpresaExtendida)
-class EmpresaExtendidaAdmin(admin.ModelAdmin):
+class EmpresaExtendidaAdmin(ModelAdmin):
     list_display = ['get_empresa', 'percentual_completude', 'total_vagas_ativas', 'total_candidatos_recebidos']
     list_filter = ['percentual_completude']
     search_fields = ['empresa__razao_social', 'empresa__cnpj']
@@ -27,7 +29,7 @@ class EmpresaExtendidaAdmin(admin.ModelAdmin):
 
 
 @admin.register(VagaExtendida)
-class VagaExtendidaAdmin(admin.ModelAdmin):
+class VagaExtendidaAdmin(ModelAdmin):
     list_display = ['get_vaga_titulo', 'get_empresa', 'tipo', 'numero_vagas', 'status_medico', 'total_candidatos']
     list_filter = ['tipo', 'status_medico', 'acesso_transporte_publico']
     search_fields = ['vaga__titulo', 'vaga__empresa__razao_social']
@@ -85,7 +87,7 @@ class VagaExtendidaAdmin(admin.ModelAdmin):
 
 
 @admin.register(ProcessoSeletivo)
-class ProcessoSeletivoAdmin(admin.ModelAdmin):
+class ProcessoSeletivoAdmin(ModelAdmin):
     list_display = ['get_candidato', 'get_vaga', 'get_empresa', 'status', 'atualizado_em']
     list_filter = ['status', 'atualizado_em']
     search_fields = [
@@ -130,7 +132,7 @@ class ProcessoSeletivoAdmin(admin.ModelAdmin):
 
 
 @admin.register(NotificacaoEmpresa)
-class NotificacaoEmpresaAdmin(admin.ModelAdmin):
+class NotificacaoEmpresaAdmin(ModelAdmin):
     list_display = ['get_empresa', 'tipo', 'titulo', 'lida', 'criada_em']
     list_filter = ['tipo', 'lida', 'criada_em']
     search_fields = ['empresa__razao_social', 'titulo', 'mensagem']

@@ -10,16 +10,21 @@ from django.urls import reverse, NoReverseMatch
 @login_required
 def dashboard(request):
     """
-    Dashboard principal baseado no tipo de usuário
+    Dashboard principal baseado no tipo de usuário.
+    Redireciona para o dashboard específico de acordo com o role do usuário.
     """
     user = request.user
-    
+
     if user.is_pcd():
-        return render(request, 'core/dashboard_pcd.html')
+        return redirect('dashboard_pcd')
     elif user.is_empresa():
-        return render(request, 'core/dashboard_empresa.html')
+        return redirect('dashboard_empresa')
+    elif user.is_root():
+        return redirect('admin:index')
     else:
-        return render(request, 'core/dashboard.html')
+        # Fallback para usuários sem role específico
+        messages.info(request, 'Por favor, complete seu cadastro.')
+        return redirect('escolha_tipo')
 
 # ------------------------- PÁGINAS BÁSICAS -------------------------- #
 

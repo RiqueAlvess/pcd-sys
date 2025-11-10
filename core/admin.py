@@ -1,5 +1,7 @@
 # core/admin.py
 from django.contrib import admin
+from unfold.admin import ModelAdmin
+from unfold.contrib.filters.admin import RangeDateFilter
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 from .models import (
     User,
@@ -53,7 +55,7 @@ class MedicoProfileInline(admin.StackedInline):
 # ----------------- USER ADMIN CUSTOMIZADO ------------------ #
 
 @admin.register(User)
-class UserAdmin(DjangoUserAdmin):
+class UserAdmin(DjangoUserAdmin, ModelAdmin):
     list_display  = ("username", "email", "role", "is_staff", "is_active")
     list_filter   = ("role", "is_staff", "is_active", "is_superuser")
     search_fields = ("username", "email")
@@ -82,6 +84,6 @@ class UserAdmin(DjangoUserAdmin):
 # ----------------- OUTROS MODELOS SIMPLES ------------------ #
 
 @admin.register(CategoriaDeficiencia)
-class CategoriaDeficienciaAdmin(admin.ModelAdmin):
+class CategoriaDeficienciaAdmin(ModelAdmin):
     list_display  = ("nome",)
     search_fields = ("nome",)

@@ -608,21 +608,18 @@ def notificacoes_empresa(request):
                 
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=400)
-    
-    notificacoes = NotificacaoEmpresa.objects.filter(empresa=empresa)
-    
-    # Marcar como lidas as visualizadas
-    notificacoes.filter(lida=False).update(lida=True)
-    
+
+    notificacoes = NotificacaoEmpresa.objects.filter(empresa=empresa).order_by('-criada_em')
+
     # Paginação
     paginator = Paginator(notificacoes, 15)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
-    
+
     context = {
         'page_obj': page_obj,
     }
-    
+
     return render(request, 'usercompany/notificacoes_empresa.html', context)
 
 

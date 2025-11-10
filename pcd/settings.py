@@ -167,12 +167,12 @@ UNFOLD = {
     },
     "SIDEBAR": {
         "show_search": True,
-        "show_all_applications": True,
+        "show_all_applications": False,
         "navigation": [
             {
                 "title": "Dashboard",
                 "icon": "dashboard",
-                "link": lambda request: "/admin/",
+                "link": "/admin/",
             },
             {
                 "title": "Usuários",
@@ -180,19 +180,19 @@ UNFOLD = {
                 "items": [
                     {
                         "title": "Usuários",
-                        "link": lambda request: "/admin/core/user/",
+                        "link": "/admin/core/user/",
                     },
                     {
                         "title": "Empresas",
-                        "link": lambda request: "/admin/core/empresa/",
+                        "link": "/admin/core/empresa/",
                     },
                     {
                         "title": "PCDs",
-                        "link": lambda request: "/admin/core/pcdprofile/",
+                        "link": "/admin/core/pcdprofile/",
                     },
                     {
                         "title": "Médicos",
-                        "link": lambda request: "/admin/core/medicoprofile/",
+                        "link": "/admin/core/medicoprofile/",
                     },
                 ],
             },
@@ -202,18 +202,18 @@ UNFOLD = {
                 "items": [
                     {
                         "title": "Vagas",
-                        "link": lambda request: "/admin/userpcd/vaga/",
+                        "link": "/admin/userpcd/vaga/",
                     },
                     {
                         "title": "Candidaturas",
-                        "link": lambda request: "/admin/userpcd/candidatura/",
+                        "link": "/admin/userpcd/candidatura/",
                     },
                 ],
             },
             {
                 "title": "Documentos",
                 "icon": "description",
-                "link": lambda request: "/admin/userpcd/documento/",
+                "link": "/admin/userpcd/documento/",
             },
             {
                 "title": "Notificações",
@@ -221,18 +221,18 @@ UNFOLD = {
                 "items": [
                     {
                         "title": "Notificações PCD",
-                        "link": lambda request: "/admin/userpcd/notificacao/",
+                        "link": "/admin/userpcd/notificacao/",
                     },
                     {
                         "title": "Notificações Empresa",
-                        "link": lambda request: "/admin/usercompany/notificacaoempresa/",
+                        "link": "/admin/usercompany/notificacaoempresa/",
                     },
                 ],
             },
             {
                 "title": "Deficiências",
                 "icon": "accessible",
-                "link": lambda request: "/admin/core/categoriadeficiencia/",
+                "link": "/admin/core/categoriadeficiencia/",
             },
         ],
     },

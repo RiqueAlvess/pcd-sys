@@ -336,20 +336,41 @@ def minhas_candidaturas(request):
 @login_required
 def notificacoes(request):
     """Lista de notificações"""
-    notificacoes = Notificacao.objects.filter(user=request.user)
-    
-    # Marcar como lidas
-    notificacoes.filter(lida=False).update(lida=True)
-    
+    # Processar ações via POST (marcar como lida, excluir)
+    if request.method == 'POST':
+        import json
+        try:
+            data = json.loads(request.body)
+            action = data.get('action')
+
+            if action == 'marcar_lida':
+                notif_id = data.get('notificacao_id')
+                Notificacao.objects.filter(id=notif_id, user=request.user).update(lida=True)
+                return JsonResponse({'success': True})
+
+            elif action == 'marcar_todas_lidas':
+                Notificacao.objects.filter(user=request.user, lida=False).update(lida=True)
+                return JsonResponse({'success': True})
+
+            elif action == 'excluir':
+                notif_id = data.get('notificacao_id')
+                Notificacao.objects.filter(id=notif_id, user=request.user).delete()
+                return JsonResponse({'success': True})
+
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+
+    notificacoes = Notificacao.objects.filter(user=request.user).order_by('-criada_em')
+
     # Paginação
     paginator = Paginator(notificacoes, 15)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
-    
+
     context = {
         'page_obj': page_obj,
     }
-    
+
     return render(request, 'usercore/notificacoes.html', context)
 
 

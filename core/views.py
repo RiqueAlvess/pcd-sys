@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.contrib.messages import constants
 from .models import User, Empresa, PCDProfile, CategoriaDeficiencia
@@ -133,7 +133,19 @@ def smart_redirect_after_login(user, request):
         # Fallback final em caso de qualquer outro erro
         messages.warning(request, 'Redirecionando para página inicial.')
         return redirect('escolha_tipo')
-    
+
+
+# ------------------------- LOGOUT ----------------------------------- #
+
+def logout_view(request):
+    """
+    View de logout que aceita tanto GET quanto POST.
+    """
+    logout(request)
+    messages.add_message(request, constants.SUCCESS, 'Logout realizado com sucesso.')
+    return redirect('login')
+
+
 # ------------------------- CADASTRO PCD ----------------------------- #
 
 def cadastro_pcd(request):

@@ -70,7 +70,9 @@ class VagaExtendida(models.Model):
     # Status médico
     status_medico = models.CharField(max_length=20, choices=STATUS_MEDICO_CHOICES, default='pendente')
     observacoes_medicas = models.TextField(blank=True)
-    
+    data_avaliacao_medica = models.DateTimeField(null=True, blank=True)
+    medico_avaliador = models.ForeignKey('core.User', on_delete=models.SET_NULL, null=True, blank=True, related_name='vagas_avaliadas', limit_choices_to={'role': 'medico'})
+
     # Contadores
     total_candidatos = models.IntegerField(default=0)
     candidatos_compativel = models.IntegerField(default=0)

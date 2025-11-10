@@ -1,0 +1,354 @@
+╔════════════════════════════════════════════════════════════════════════════════╗
+║                   REFERÊNCIA RÁPIDA - PROJETO DJANGO PCD                       ║
+╚════════════════════════════════════════════════════════════════════════════════╝
+
+ARQUIVO PRINCIPAL PARA LER PRIMEIRO:
+=> /home/user/pcd-sys/ESTRUTURA_COMPLETA.md (documentação detalhada)
+=> /home/user/pcd-sys/RESUMO_EXECUTIVO.md (visão geral)
+=> /home/user/pcd-sys/DIAGRAMA_MODELOS.txt (relacionamentos visuais)
+
+════════════════════════════════════════════════════════════════════════════════
+
+ESTRUTURA DO PROJETO:
+
+/home/user/pcd-sys/
+├── core/                  [App de autenticação]
+│   ├── models.py          → User, Empresa, PCDProfile, MedicoProfile (5 modelos)
+│   ├── views.py           → Login, cadastro, dashboard (242 linhas)
+│   └── admin.py           → Admin customizado com inlines
+│
+├── userpcd/               [App para Pessoas Com Deficiência]
+│   ├── models.py          → Vaga, Candidatura, Documento, etc (8 modelos)
+│   ├── views.py           → Dashboard, vagas, candidaturas (383 linhas)
+│   ├── matching.py        → Motor de matching (pronto, não integrado)
+│   └── signals.py         → Automações e sinais
+│
+└── usercompany/           [App para Empresas]
+    ├── models.py          → EmpresaExtendida, VagaExtendida, etc (6 modelos)
+    └── views.py           → Dashboard empresa, gestão de vagas (659 linhas)
+
+════════════════════════════════════════════════════════════════════════════════
+
+MODELOS PRINCIPAIS (19 TOTAL):
+
+CORE:
+1. User           - Usuario customizado com roles (root, pcd, empresa, medico)
+2. Empresa        - Dados de empresa empregadora
+3. PCDProfile     - Perfil de Pessoa Com Deficiência
+4. MedicoProfile  - Perfil de médico avaliador
+5. CategoriaDeficiencia - Categorias de deficiências (Físico, Auditivo, Visual, etc)
+
+USERPCD:
+6. Vaga           - Vagas de emprego/capacitação
+7. Candidatura    - Registro de candidaturas (PCD → Vaga)
+8. Documento      - Currículo e laudos médicos
+9. Notificacao    - Notificações para PCDs
+10. PerfilPCDExtendido - Extensão com dados adicionais + completude
+11. Conversa      - Comunicação PCD ↔ Empresa
+12. Mensagem      - Mensagens individuais
++ Future models
+
+USERCOMPANY:
+13. EmpresaExtendida  - Extensão com estatísticas
+14. VagaExtendida     - Extensão com campos médicos
+15. ProcessoSeletivo  - Rastreamento do processo de seleção
+16. NotificacaoEmpresa - Notificações para empresas
++ Future models
+
+════════════════════════════════════════════════════════════════════════════════
+
+SISTEMA DE ROLES:
+
+ROOT (Administrador):
+├── Acesso completo Django Admin
+├── Gerenciar usuários
+├── Aprovar/rejeitar vagas
+└── Visualizar relatórios
+
+PCD (Pessoa Com Deficiência):
+├── Dashboard com completude do perfil
+├── Listar e filtrar vagas
+├── Candidatar-se a vagas
+├── Upload de currículo/laudo
+├── Acompanhar candidaturas
+├── Receber notificações
+└── Comunicar com empresas
+
+EMPRESA (Empresa Empregadora):
+├── Dashboard com estatísticas
+├── Criar nova vaga
+├── Gerenciar vagas
+├── Ver candidatos
+├── Visualizar CVs
+├── Atualizar status de candidatos
+├── Receber notificações
+└── Comunicar com PCDs
+
+MEDICO (Médico Avaliador):
+├── Avaliar PCDs
+├── Registrar CID-10
+├── Aprovar/rejeitar vagas
+└── Gerar parecer médico [NÃO IMPLEMENTADO AINDA]
+
+════════════════════════════════════════════════════════════════════════════════
+
+ENDPOINTS PRINCIPAIS:
+
+AUTENTICAÇÃO:
+POST   /core/login/              → Login
+GET    /core/logout/             → Logout
+GET    /core/dashboard/          → Dashboard (redireciona por role)
+GET    /core/escolha/            → Escolha de tipo de usuário
+POST   /core/cadastro/pcd/       → Cadastro PCD
+POST   /core/cadastro/empresa/   → Cadastro Empresa
+
+DASHBOARD:
+GET    /userpcd/dashboard/       → Dashboard PCD
+GET    /usercompany/dashboard/   → Dashboard Empresa
+
+VAGAS (PCD):
+GET    /userpcd/vagas/           → Listar vagas com filtros
+POST   /userpcd/candidatar/<id>/ → Candidatar a uma vaga
+
+VAGAS (EMPRESA):
+GET    /usercompany/vagas/       → Minhas vagas
+GET/POST /usercompany/vagas/nova/ → Criar nova vaga
+GET/POST /usercompany/vagas/<id>/editar/    → Editar vaga
+POST   /usercompany/vagas/<id>/encerrar/    → Encerrar vaga
+
+CANDIDATOS:
+GET    /usercompany/vagas/<id>/candidatos/  → Listar candidatos
+POST   /usercompany/candidatos/<id>/status/ → Atualizar status (AJAX)
+GET    /usercompany/candidatos/<id>/curriculo/ → Ver currículo
+
+PERFIS:
+GET/POST /userpcd/perfil/editar/              → Editar perfil PCD
+GET/POST /usercompany/perfil/editar/          → Editar perfil Empresa
+
+DOCUMENTOS:
+POST   /userpcd/documento/upload/ → Upload de documento
+
+NOTIFICAÇÕES:
+GET    /userpcd/notificacoes/     → Notificações PCD
+GET    /usercompany/notificacoes/ → Notificações Empresa
+GET    /userpcd/api/notificacoes/ → API AJAX
+
+════════════════════════════════════════════════════════════════════════════════
+
+FLUXOS FUNCIONANDO:
+
+1. CADASTRO
+   User (username, email, senha, role)
+   ├─ if role='pcd'     → PCDProfile + PerfilPCDExtendido
+   ├─ if role='empresa' → Empresa + EmpresaExtendida
+   └─ if role='medico'  → MedicoProfile
+
+2. LOGIN
+   → Valida username/senha
+   → Redireciona inteligentemente por role
+   → Cria perfil ausente se necessário
+
+3. CANDIDATURA
+   PCD vê vagas → Clica candidatar
+   → Cria Candidatura (status: pendente)
+   → Cria Notificacao para PCD
+   → Cria ProcessoSeletivo automático
+   → Empresa recebe NotificacaoEmpresa
+
+4. AVALIAÇÃO
+   Empresa vê candidatos
+   → Visualiza currículo
+   → Atualiza status (pendente → análise → entrevista → aprovado/rejeitado)
+   → ProcessoSeletivo registra datas
+
+5. VAGA
+   Empresa cria vaga
+   → Cria Vaga + VagaExtendida
+   → Status médico: 'pendente'
+   → Root aprova/rejeita
+   → Vaga fica 'ativa' se aprovada
+
+════════════════════════════════════════════════════════════════════════════════
+
+STATUS DE IMPLEMENTAÇÃO:
+
+PRONTO (100%):
+✓ Sistema de autenticação
+✓ Sistema de roles
+✓ Modelos de dados
+✓ Admin customizado
+✓ Fluxo de cadastro
+✓ Fluxo de candidatura
+✓ Sistema de notificações
+✓ Upload de documentos
+✓ Cálculo de completude
+✓ Signals automáticos
+✓ Paginação e filtros
+
+EM DESENVOLVIMENTO:
+◐ Templates/Frontend
+◐ Motor de matching (código pronto, não integrado)
+◐ Chat/Mensagens (modelos prontos, views incompletas)
+
+NÃO IMPLEMENTADO (0%):
+✗ Dashboard médico
+✗ Envio de emails
+✗ Chat em tempo real
+✗ APIs externas (CEP, CNPJ)
+✗ Relatórios
+✗ Analytics
+✗ Testes automatizados
+
+════════════════════════════════════════════════════════════════════════════════
+
+FUNCIONALIDADES AVANÇADAS CODIFICADAS:
+
+1. MOTOR DE MATCHING (matching.py)
+   - Calcula compatibilidade PCD ↔ Vaga
+   - Pesos: Deficiência(40) + Localização(20) + Modalidade(15) + Perfil(15) + Status(10)
+   - Score: 0-100
+   - Status: Estrutura pronta, falta integração nas views
+
+2. SIGNALS AUTOMÁTICOS (signals.py)
+   - Cria PerfilPCDExtendido automaticamente
+   - Atualiza completude ao salvar PCDProfile
+   - Notifica ao candidatar
+   - Limpa notificações antigas (30+ dias)
+
+3. CÁLCULO DE COMPLETUDE
+   PCD:     80% campos obrigatórios + 10% deficiências + 10% currículo
+   Empresa: 80% campos obrigatórios + 10% tel secundário + 10% site
+
+4. VALIDAÇÃO DE UPLOADS
+   - Tipos: PDF, JPG, PNG
+   - Máximo: 5MB
+   - Armazenamento: /media/documentos/
+   - Limpeza automática ao deletar
+
+════════════════════════════════════════════════════════════════════════════════
+
+COMO COMEÇAR A DESENVOLVER:
+
+1. Ler a documentação:
+   → ESTRUTURA_COMPLETA.md (documentação detalhada)
+   → DIAGRAMA_MODELOS.txt (visualizar relacionamentos)
+
+2. Entender a arquitetura:
+   → 3 apps: core, userpcd, usercompany
+   → Roles: root, pcd, empresa, medico
+   → Models bem normalizados
+
+3. Próximas tarefas (recomendado):
+   → Integrar matching.py nas views de vagas
+   → Implementar dashboard médico
+   → Adicionar envio de emails
+   → Melhorar templates/frontend
+
+════════════════════════════════════════════════════════════════════════════════
+
+CONFIGURAÇÕES IMPORTANTES:
+
+Django Version:    5.2.1
+Database:          SQLite3
+Auth Model:        core.User (customizado)
+Admin:             Unfold (customizado)
+Media Root:        /media/
+Settings:          /home/user/pcd-sys/pcd/settings.py
+
+Installed Apps:
+- unfold (admin customizado)
+- django.contrib.admin
+- django.contrib.auth
+- django.contrib.contenttypes
+- django.contrib.sessions
+- django.contrib.messages
+- django.contrib.staticfiles
+- core
+- userpcd
+- usercompany
+
+════════════════════════════════════════════════════════════════════════════════
+
+PASSOS PARA RODAR LOCALMENTE:
+
+1. Criar ambiente virtual:
+   python -m venv venv
+   source venv/bin/activate
+
+2. Instalar dependências:
+   pip install -r requirements.txt
+
+3. Executar migrations:
+   python manage.py migrate
+
+4. Criar superusuário:
+   python manage.py createsuperuser
+
+5. Rodar servidor:
+   python manage.py runserver
+
+6. Acessar:
+   - Sistema: http://localhost:8000/
+   - Admin: http://localhost:8000/admin/
+
+════════════════════════════════════════════════════════════════════════════════
+
+ARQUIVOS IMPORTANTES:
+
+Modelos:
+- /home/user/pcd-sys/core/models.py
+- /home/user/pcd-sys/userpcd/models.py
+- /home/user/pcd-sys/usercompany/models.py
+
+Views:
+- /home/user/pcd-sys/core/views.py
+- /home/user/pcd-sys/userpcd/views.py
+- /home/user/pcd-sys/usercompany/views.py
+
+URLs:
+- /home/user/pcd-sys/pcd/urls.py (principal)
+- /home/user/pcd-sys/core/urls.py
+- /home/user/pcd-sys/userpcd/urls.py
+- /home/user/pcd-sys/usercompany/urls.py
+
+Admin:
+- /home/user/pcd-sys/core/admin.py
+- /home/user/pcd-sys/userpcd/admin.py
+- /home/user/pcd-sys/usercompany/admin.py
+
+Avançado:
+- /home/user/pcd-sys/userpcd/matching.py (motor de matching)
+- /home/user/pcd-sys/userpcd/signals.py (automações)
+
+Configuração:
+- /home/user/pcd-sys/pcd/settings.py (Django settings)
+
+════════════════════════════════════════════════════════════════════════════════
+
+PERGUNTAS FREQUENTES:
+
+P: Qual é o modelo User utilizado?
+R: core.User - Customizado a partir de AbstractUser com campo 'role'
+
+P: Como o sistema diferencia usuários PCD de Empresa?
+R: Através do campo 'role' em User e verificações nas views com is_pcd(), is_empresa()
+
+P: Onde são armazenados os arquivos enviados?
+R: Em /media/documentos/ com validação de tipo e tamanho
+
+P: Como as notificações funcionam?
+R: Criadas automaticamente via signals ao candidatar, são armazenadas no DB
+
+P: O sistema usa WebSocket para chat?
+R: Não, modelos estão prontos mas implementação de chat em tempo real é futura
+
+P: Como o matching de vagas funciona?
+R: Arquivo matching.py tem a lógica pronta mas precisa ser integrada nas views
+
+════════════════════════════════════════════════════════════════════════════════
+
+Documentação criada em: 2025-11-10
+Versão Django: 5.2.1
+Status: Sistema funcional (70-80% implementado)
+
+════════════════════════════════════════════════════════════════════════════════

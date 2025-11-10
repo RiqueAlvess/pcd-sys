@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+
+{% block title %}Avaliar Vagas - Portal PCD{% endblock %}
+
+{% block body %}
+<div class="min-h-screen bg-gray-100">
+  <!-- Header -->
+  <header class="bg-purple-700 text-white p-4 shadow-lg">
+    <div class="container mx-auto flex justify-between items-center">
+      <h1 class="text-2xl font-bold">Avaliação de Vagas</h1>
+      <a href="{% url 'dashboard_medico' %}" class="bg-purple-900 hover:bg-purple-800 px-4 py-2 rounded">← Voltar ao Dashboard</a>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="container mx-auto p-6">
+    <!-- Mensagens -->
+    {% if messages %}
+      {% for message in messages %}
+        <div class="mb-4 p-4 rounded {% if message.tags == 'success' %}bg-green-100 text-green-800{% elif message.tags == 'error' %}bg-red-100 text-red-800{% else %}bg-blue-100 text-blue-800{% endif %}">
+          {{ message }}
+        </div>
+      {% endfor %}
+    {% endif %}
+
+    <!-- Filters -->
+    <div class="bg-white rounded-lg shadow-md p-4 mb-6">
+      <form method="get" class="flex gap-4 items-center">
+        <label class="font-semibold">Filtrar por Status:</label>
+        <select name="status" class="border border-gray-300 rounded px-4 py-2" onchange="this.form.submit()">
+          <option value="pendente" {% if status_filter == 'pendente' %}selected{% endif %}>⏳ Aguardando Avaliação</option>
+          <option value="aprovada" {% if status_filter == 'aprovada' %}selected{% endif %}>✅ Aprovada</option>
+          <option value="rejeitada" {% if status_filter == 'rejeitada' %}selected{% endif %}>🚫 Rejeitada</option>
+          <option value="todos" {% if status_filter == 'todos' %}selected{% endif %}>Todas</option>
+        </select>
+      </form>
+    </div>
+
+    <!-- Vagas List -->
+    <div class="space-y-4">
+      {% for vaga_ext in vagas %}
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <div class="flex justify-between items-start">
+            <div class="flex-1">
+              <div class="flex items-center gap-3 mb-2">
+                <h3 class="text-xl font-bold text-purple-700">{{ vaga_ext.vaga.titulo }}</h3>
+                <span class="inline-block px-3 py-1 rounded text-sm font-semibold
+                  {% if vaga_ext.status_medico == 'pendente' %}bg-yellow-100 text-yellow-800
+                  {% elif vaga_ext.status_medico == 'aprovada' %}bg-green-100 text-green-800
+                  {% elif vaga_ext.status_medico == 'rejeitada' %}bg-red-100 text-red-800
+                  {% endif %}">
+                  {{ vaga_ext.get_status_medico_display }}
+                </span>
+              </div>
+
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-3">
+                <div>
+                  <p class="text-xs text-gray-500">Empresa</p>
+                  <p class="font-semibold">{{ vaga_ext.vaga.empresa.razao_social }}</p>
+                </div>
+                <div>
+                  <p class="text-xs text-gray-500">Tipo</p>
+                  <p class="font-semibold">{{ vaga_ext.get_tipo_display }}</p>
+                </div>
+                <div>
+                  <p class="text-xs text-gray-500">Modalidade</p>
+                  <p class="font-semibold">{{ vaga_ext.vaga.get_modalidade_display }}</p>
+                </div>
+                <div>
+                  <p class="text-xs text-gray-500">Localização</p>
+                  <p class="font-semibold">{{ vaga_ext.vaga.cidade }}/{{ vaga_ext.vaga.uf }}</p>
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <p class="text-sm text-gray-700">{{ vaga_ext.vaga.descricao|truncatewords:30 }}</p>
+              </div>
+
+              {% if vaga_ext.deficiencias_elegiveis.all %}
+                <div class="mb-2">
+                  <p class="text-xs text-gray-500 font-semibold mb-1">Deficiências Elegíveis:</p>
+                  <div class="flex flex-wrap gap-1">
+                    {% for def in vaga_ext.deficiencias_elegiveis.all %}
+                      <span class="bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs">{{ def.nome }}</span>
+                    {% endfor %}
+                  </div>
+                </div>
+              {% endif %}
+
+              {% if vaga_ext.medico_avaliador %}
+                <div class="text-xs text-gray-500 mt-2">
+                  Avaliado por {{ vaga_ext.medico_avaliador.medicoprofile.nome_completo }} em {{ vaga_ext.data_avaliacao_medica|date:"d/m/Y H:i" }}
+                </div>
+              {% endif %}
+            </div>
+
+            <div class="ml-4">
+              <a href="{% url 'avaliar_vaga' vaga_ext.vaga.id %}"
+                 class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded inline-block whitespace-nowrap">
+                {% if vaga_ext.status_medico == 'pendente' %}Avaliar{% else %}Ver/Editar{% endif %}
+              </a>
+            </div>
+          </div>
+        </div>
+      {% empty %}
+        <div class="bg-white rounded-lg shadow-md p-8 text-center text-gray-500">
+          Nenhuma vaga encontrada com esse filtro.
+        </div>
+      {% endfor %}
+    </div>
+  </main>
+</div>
+{% endblock %}

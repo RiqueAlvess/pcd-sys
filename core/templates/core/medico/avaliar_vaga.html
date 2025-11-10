@@ -1,0 +1,208 @@
+{% extends 'base.html' %}
+
+{% block title %}Avaliar Vaga - {{ vaga.titulo }} - Portal PCD{% endblock %}
+
+{% block body %}
+<div class="min-h-screen bg-gray-100">
+  <!-- Header -->
+  <header class="bg-purple-700 text-white p-4 shadow-lg">
+    <div class="container mx-auto flex justify-between items-center">
+      <h1 class="text-2xl font-bold">Avaliação de Vaga</h1>
+      <a href="{% url 'listar_vagas_pendentes' %}" class="bg-purple-900 hover:bg-purple-800 px-4 py-2 rounded">← Voltar</a>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="container mx-auto p-6">
+    <!-- Mensagens -->
+    {% if messages %}
+      {% for message in messages %}
+        <div class="mb-4 p-4 rounded {% if message.tags == 'success' %}bg-green-100 text-green-800{% elif message.tags == 'error' %}bg-red-100 text-red-800{% else %}bg-blue-100 text-blue-800{% endif %}">
+          {{ message }}
+        </div>
+      {% endfor %}
+    {% endif %}
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Informações da Vaga -->
+      <div class="lg:col-span-2 space-y-6">
+        <!-- Dados Básicos -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <h2 class="text-xl font-bold mb-4 text-purple-700">{{ vaga.titulo }}</h2>
+
+          <div class="grid grid-cols-2 gap-4 mb-4">
+            <div>
+              <p class="text-sm text-gray-500">Empresa</p>
+              <p class="font-semibold">{{ vaga.empresa.razao_social }}</p>
+              <p class="text-xs text-gray-500">CNPJ: {{ vaga.empresa.cnpj }}</p>
+            </div>
+            <div>
+              <p class="text-sm text-gray-500">Status da Vaga</p>
+              <p class="font-semibold">{{ vaga.get_status_display }}</p>
+            </div>
+            <div>
+              <p class="text-sm text-gray-500">Tipo</p>
+              <p class="font-semibold">{{ vaga_extendida.get_tipo_display }}</p>
+            </div>
+            <div>
+              <p class="text-sm text-gray-500">Número de Vagas</p>
+              <p class="font-semibold">{{ vaga_extendida.numero_vagas }}</p>
+            </div>
+            <div>
+              <p class="text-sm text-gray-500">Modalidade</p>
+              <p class="font-semibold">{{ vaga.get_modalidade_display }}</p>
+            </div>
+            <div>
+              <p class="text-sm text-gray-500">Localização</p>
+              <p class="font-semibold">{{ vaga.cidade }}/{{ vaga.uf }}</p>
+            </div>
+            {% if vaga.salario_min %}
+            <div>
+              <p class="text-sm text-gray-500">Salário</p>
+              <p class="font-semibold">
+                R$ {{ vaga.salario_min }}{% if vaga.salario_max %} - R$ {{ vaga.salario_max }}{% endif %}
+              </p>
+            </div>
+            {% endif %}
+            {% if vaga_extendida.tipo == 'capacitacao' and vaga_extendida.duracao_capacitacao %}
+            <div>
+              <p class="text-sm text-gray-500">Duração da Capacitação</p>
+              <p class="font-semibold">{{ vaga_extendida.duracao_capacitacao }}</p>
+            </div>
+            {% endif %}
+          </div>
+
+          <div class="flex items-center gap-2 text-sm">
+            {% if vaga_extendida.acesso_transporte_publico %}
+              <span class="bg-green-100 text-green-800 px-3 py-1 rounded">🚌 Acesso a transporte público</span>
+            {% endif %}
+            {% if vaga.acessivel %}
+              <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded">♿ Local acessível</span>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Descrição -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <h3 class="text-lg font-bold mb-3 text-purple-700">Descrição da Vaga</h3>
+          <p class="text-gray-700 whitespace-pre-line">{{ vaga.descricao }}</p>
+        </div>
+
+        <!-- Requisitos -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <h3 class="text-lg font-bold mb-3 text-purple-700">Requisitos</h3>
+          <p class="text-gray-700 whitespace-pre-line">{{ vaga.requisitos }}</p>
+        </div>
+
+        <!-- Benefícios -->
+        {% if vaga.beneficios %}
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <h3 class="text-lg font-bold mb-3 text-purple-700">Benefícios</h3>
+          <p class="text-gray-700 whitespace-pre-line">{{ vaga.beneficios }}</p>
+        </div>
+        {% endif %}
+
+        <!-- Estatísticas -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <h3 class="text-lg font-bold mb-3 text-purple-700">Estatísticas</h3>
+          <div class="grid grid-cols-3 gap-4">
+            <div class="text-center p-4 bg-purple-50 rounded">
+              <p class="text-3xl font-bold text-purple-700">{{ vaga_extendida.total_candidatos }}</p>
+              <p class="text-sm text-gray-600">Total de Candidatos</p>
+            </div>
+            <div class="text-center p-4 bg-green-50 rounded">
+              <p class="text-3xl font-bold text-green-700">{{ vaga_extendida.candidatos_compativel }}</p>
+              <p class="text-sm text-gray-600">Candidatos Compatíveis</p>
+            </div>
+            <div class="text-center p-4 bg-blue-50 rounded">
+              <p class="text-3xl font-bold text-blue-700">{{ vaga.candidatos.count }}</p>
+              <p class="text-sm text-gray-600">Candidaturas</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Formulário de Avaliação -->
+      <div class="lg:col-span-1">
+        <div class="bg-white rounded-lg shadow-md p-6 sticky top-6">
+          <h2 class="text-xl font-bold mb-4 text-purple-700">Avaliação Médica</h2>
+
+          <!-- Status Atual -->
+          {% if vaga_extendida.medico_avaliador %}
+            <div class="mb-4 p-3 bg-blue-50 rounded border border-blue-200">
+              <p class="text-sm text-gray-600">Avaliado por:</p>
+              <p class="font-semibold">{{ vaga_extendida.medico_avaliador.medicoprofile.nome_completo }}</p>
+              <p class="text-xs text-gray-500">em {{ vaga_extendida.data_avaliacao_medica|date:"d/m/Y H:i" }}</p>
+            </div>
+          {% endif %}
+
+          <form method="post">
+            {% csrf_token %}
+
+            <!-- Status de Avaliação -->
+            <div class="mb-4">
+              <label class="block text-sm font-semibold mb-2">Status da Avaliação *</label>
+              <select name="status_medico" required
+                      class="w-full border border-gray-300 rounded px-4 py-2 focus:ring-2 focus:ring-purple-500">
+                <option value="">Selecione...</option>
+                {% for value, label in status_choices %}
+                  <option value="{{ value }}" {% if vaga_extendida.status_medico == value %}selected{% endif %}>
+                    {{ label }}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <!-- Deficiências Elegíveis -->
+            <div class="mb-4">
+              <label class="block text-sm font-semibold mb-2">Deficiências Elegíveis</label>
+              <p class="text-xs text-gray-500 mb-2">Selecione quais deficiências são compatíveis com esta vaga:</p>
+              <div class="space-y-2 max-h-48 overflow-y-auto border border-gray-200 rounded p-3">
+                {% for categoria in categorias %}
+                  <label class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
+                    <input type="checkbox" name="deficiencias_elegiveis" value="{{ categoria.id }}"
+                           {% if categoria in vaga_extendida.deficiencias_elegiveis.all %}checked{% endif %}
+                           class="w-4 h-4 text-purple-600">
+                    <span class="text-sm">{{ categoria.nome }}</span>
+                  </label>
+                {% endfor %}
+              </div>
+            </div>
+
+            <!-- Observações -->
+            <div class="mb-4">
+              <label class="block text-sm font-semibold mb-2">Observações Médicas</label>
+              <textarea name="observacoes_medicas" rows="6"
+                        class="w-full border border-gray-300 rounded px-4 py-2 focus:ring-2 focus:ring-purple-500"
+                        placeholder="Justifique sua avaliação e as deficiências selecionadas...">{{ vaga_extendida.observacoes_medicas }}</textarea>
+            </div>
+
+            <!-- Botões -->
+            <div class="space-y-2">
+              <button type="submit"
+                      class="w-full bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-semibold">
+                Salvar Avaliação
+              </button>
+              <a href="{% url 'listar_vagas_pendentes' %}"
+                 class="block text-center w-full bg-gray-200 hover:bg-gray-300 text-gray-700 px-6 py-3 rounded-lg font-semibold">
+                Cancelar
+              </a>
+            </div>
+          </form>
+
+          <!-- Orientações -->
+          <div class="mt-6 pt-6 border-t">
+            <p class="text-xs text-gray-500 font-semibold mb-2">Orientações:</p>
+            <ul class="space-y-1 text-xs text-gray-600">
+              <li>• Analise se as atividades são compatíveis</li>
+              <li>• Considere adaptações possíveis</li>
+              <li>• Verifique acessibilidade do local</li>
+              <li>• Selecione deficiências viáveis</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+{% endblock %}

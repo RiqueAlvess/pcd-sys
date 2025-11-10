@@ -1,0 +1,256 @@
+DIAGRAMA DE RELACIONAMENTOS ENTRE MODELOS
+==========================================
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                            MODELO DE USUÁRIO                               │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+                                  ┌──────────┐
+                                  │  User    │
+                                  ├──────────┤
+                                  │ username │ (unique)
+                                  │ email    │
+                                  │ password │
+                                  │ role     │ (choice)
+                                  └────┬─────┘
+                                       │
+                    ┌──────────────────┼──────────────────┬─────────────┐
+                    │                  │                  │             │
+         (role='empresa')   (role='pcd')      (role='medico')   (role='root')
+                    │                  │                  │             │
+                    ▼                  ▼                  ▼             ▼
+              ┌──────────┐      ┌─────────────┐  ┌──────────────┐  Admin Only
+              │ Empresa  │      │ PCDProfile  │  │MedicoProfile │
+              ├──────────┤      ├─────────────┤  ├──────────────┤
+              │cnpj      │      │cpf          │  │crm           │
+              │razao...  │      │telefone     │  │especialidade │
+              │telefone  │      │data_nasc    │  └──────────────┘
+              └──────────┘      │nome_completo│
+                   │            │deficiencias │
+                   │            │(M2M)        │
+                   │            └─────────────┘
+                   │                  │
+                   │                  ▼
+                   │            ┌──────────────────┐
+                   │            │PerfilPCDExtendido│
+                   │            ├──────────────────┤
+                   │            │endereço completo │
+                   │            │status_medico     │
+                   │            │completude (%)    │
+                   │            └──────────────────┘
+                   │
+                   ▼
+          ┌─────────────────────┐
+          │ EmpresaExtendida    │
+          ├─────────────────────┤
+          │completude (%)       │
+          │total_vagas_ativas   │
+          │total_candidatos     │
+          └─────────────────────┘
+
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         MODELO DE VAGAS E CANDIDATURAS                      │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+    ┌──────────┐
+    │ Empresa  │
+    └────┬─────┘
+         │
+         │ 1..n
+         ▼
+    ┌───────────┐
+    │   Vaga    │
+    ├───────────┤
+    │titulo     │
+    │descricao  │
+    │modalidade │
+    │cidade,uf  │
+    │salario    │
+    │status     │ (ativa, pausada, encerrada)
+    └─────┬─────┘
+          │
+          │ 1..1
+          ▼
+    ┌────────────────────┐
+    │  VagaExtendida     │
+    ├────────────────────┤
+    │tipo (emprego/cap)  │
+    │numero_vagas        │
+    │status_medico       │ (pendente, aprovada, rejeitada)
+    │deficiencias_elegiveis (M2M)
+    │contadores         │
+    └────────────────────┘
+          │
+          │ 1..n
+          │
+    ┌─────┴──────┐
+    │            │
+    ▼            ▼
+┌──────────────┐ ┌──────────────────┐
+│ Candidatura  │ │ProcessoSeletivo  │
+├──────────────┤ ├──────────────────┤
+│status        │ │status            │
+│data_cand     │ │datas importantes │
+│observacoes   │ │observacoes       │
+└──────┬───────┘ └──────────────────┘
+       │
+       │ n..1
+       ▼
+ ┌──────────────┐
+ │ PCDProfile   │
+ └──────┬───────┘
+        │
+        │ 1..n
+        ▼
+ ┌──────────────┐
+ │  Documento   │
+ ├──────────────┤
+ │tipo          │ (curriculo, laudo)
+ │arquivo       │
+ │status        │ (pendente, aprovado, rejeitado)
+ │cid_10        │
+ └──────────────┘
+
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    MODELO DE COMUNICAÇÃO E MENSAGENS                        │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+    ┌──────────────┐              ┌──────────────┐
+    │ PCDProfile   │              │   Empresa    │
+    └──────┬───────┘              └──────┬───────┘
+           │                             │
+           │                             │
+           │                             │
+           │        ┌────────────────────┘
+           │        │
+           ├────────┤
+           │        │
+           │        │
+           └────────┴──────────────────────┐
+                                           │
+                                    (M2M) │
+                                           ▼
+                                    ┌──────────────┐
+                                    │   Conversa   │
+                                    ├──────────────┤
+                                    │pcd           │ (FK)
+                                    │empresa       │ (FK)
+                                    │vaga          │ (FK, opt)
+                                    │candidatura   │ (FK, opt)
+                                    └──────┬───────┘
+                                           │
+                                           │ 1..n
+                                           ▼
+                                    ┌──────────────┐
+                                    │  Mensagem    │
+                                    ├──────────────┤
+                                    │conversa      │ (FK)
+                                    │remetente_empr│
+                                    │conteudo      │
+                                    │lida          │
+                                    │enviada_em    │
+                                    └──────────────┘
+
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    MODELO DE NOTIFICAÇÕES                                   │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+    ┌──────────┐
+    │  User    │
+    └────┬─────┘
+         │
+         │ 1..n
+         ▼
+    ┌────────────────┐
+    │  Notificacao   │
+    ├────────────────┤
+    │tipo            │ (candidatura, documento, sistema)
+    │titulo          │
+    │mensagem        │
+    │lida            │
+    │criada_em       │
+    └────────────────┘
+
+
+    ┌──────────────┐
+    │   Empresa    │
+    └────┬─────────┘
+         │
+         │ 1..n
+         ▼
+    ┌────────────────────────┐
+    │ NotificacaoEmpresa     │
+    ├────────────────────────┤
+    │tipo                    │ (novo_candidato, status_vaga, etc)
+    │titulo                  │
+    │mensagem                │
+    │vaga                    │ (FK, opt)
+    │candidatura             │ (FK, opt)
+    │lida                    │
+    │criada_em               │
+    └────────────────────────┘
+
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    CATEGORIAS DE DEFICIÊNCIA (M2M)                          │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+    ┌─────────────────────────┐
+    │ CategoriaDeficiencia    │
+    ├─────────────────────────┤
+    │- Físico/Motora          │
+    │- Auditiva               │
+    │- Visual                 │
+    │- Intelectual/Psicológica│
+    │- Múltipla               │
+    └────────────┬────────────┘
+                 │
+         ┌───────┴────────┐
+         │                │
+         ▼                ▼
+    ┌──────────────┐  ┌──────────────────┐
+    │ PCDProfile   │  │ VagaExtendida    │
+    │(deficiencias)│  │(defic_elegiveis) │
+    └──────────────┘  └──────────────────┘
+
+
+LEGENDA:
+--------
+FK    = Foreign Key (Chave estrangeira)
+M2M   = Many to Many (Muitos para muitos)
+opt   = Opcional
+choice = Campo com opções predefinidas
+1..n  = Um para muitos
+n..1  = Muitos para um
+1..1  = Um para um
+
+
+FLUXO DE DADOS PRINCIPAL:
+=========================
+
+1. CADASTRO
+   User → Empresa / PCDProfile / MedicoProfile
+           ↓
+        EmpresaExtendida / PerfilPCDExtendido
+
+2. VAGA
+   Empresa → Vaga → VagaExtendida
+                     ↓
+                (status_medico: pendente)
+
+3. CANDIDATURA
+   PCDProfile → Candidatura ← Vaga
+                    ↓
+               ProcessoSeletivo + Notificacao + NotificacaoEmpresa
+
+4. COMUNICAÇÃO
+   PCDProfile ↔ (Conversa) ↔ Empresa
+               ↓
+            Mensagem
+
+5. DOCUMENTOS
+   PCDProfile → Documento
+

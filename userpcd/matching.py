@@ -150,6 +150,8 @@ class MatchingEngine:
             status_scores = {
                 'enquadravel': cls.PESO_STATUS,
                 'sugestivo': cls.PESO_STATUS * 0.7,
+                'avaliacao_adicional': cls.PESO_STATUS * 0.3,
+                'necessita_laudo': cls.PESO_STATUS * 0.2,
                 'pendente': cls.PESO_STATUS * 0.5,
                 'nao_enquadravel': 0
             }
@@ -157,10 +159,12 @@ class MatchingEngine:
             score = status_scores.get(status, 0)
 
             status_msgs = {
-                'enquadravel': 'Status médico: Enquadrável',
-                'sugestivo': 'Status médico: Sugestivo',
-                'pendente': 'Status médico: Pendente',
-                'nao_enquadravel': 'Status médico: Não enquadrável'
+                'enquadravel': 'Status médico: ✅ Enquadrável',
+                'sugestivo': 'Status médico: ⚠️ Sugestivo',
+                'avaliacao_adicional': 'Status médico: 🩺 Necessita Avaliação Adicional',
+                'necessita_laudo': 'Status médico: 📄 Necessita Laudo Atualizado',
+                'pendente': 'Status médico: ⏳ Pendente',
+                'nao_enquadravel': 'Status médico: 🚫 Não Enquadrável'
             }
 
             return score, status_msgs.get(status, 'Status desconhecido')
@@ -263,3 +267,77 @@ def get_candidatos_recomendados(vaga, limit=10):
 def calcular_compatibilidade(pcd_profile, vaga):
     """Calcula compatibilidade entre PCD e vaga"""
     return MatchingEngine.calcular_match(pcd_profile, vaga)
+
+
+def executar_matching_diario():
+    """
+    Executa matching diário entre PCDs enquadráveis e vagas aprovadas.
+    Envia notificações para PCDs sobre vagas compatíveis.
+
+    Returns:
+        dict: Estatísticas do matching executado
+    """
+    from userpcd.models import PerfilPCDExtendido, Notificacao
+    from usercompany.models import VagaExtendida
+    from datetime import datetime, timedelta
+
+    # Buscar vagas ativas e aprovadas pelo médico
+    vagas_aprovadas = VagaExtendida.objects.filter(
+        status_medico='aprovada',
+        vaga__status='ativa'
+    ).select_related('vaga', 'vaga__empresa')
+
+    # Buscar PCDs enquadráveis ou sugestivos
+    pcds_elegiveis = PerfilPCDExtendido.objects.filter(
+        status_medico__in=['enquadravel', 'sugestivo'],
+        pcd_profile__user__is_active=True
+    ).select_related('pcd_profile', 'pcd_profile__user')
+
+    total_vagas = vagas_aprovadas.count()
+    total_pcds = pcds_elegiveis.count()
+    matches_encontrados = 0
+    notificacoes_enviadas = 0
+
+    # Para cada vaga aprovada, encontrar PCDs compatíveis
+    for vaga_ext in vagas_aprovadas:
+        vaga = vaga_ext.vaga
+
+        # Buscar candidatos compatíveis (score >= 50)
+        matches = MatchingEngine.buscar_candidatos_compativeis(vaga, min_score=50, limit=20)
+
+        matches_encontrados += len(matches)
+
+        # Enviar notificação para PCDs compatíveis (apenas se não foram notificados recentemente)
+        for match in matches:
+            pcd = match['pcd']
+            score = match['score']
+            nivel = match['nivel']
+
+            # Verificar se já foi notificado sobre esta vaga nas últimas 7 dias
+            ultima_notificacao = Notificacao.objects.filter(
+                user=pcd.user,
+                tipo='sistema',
+                titulo__contains=vaga.titulo,
+                criada_em__gte=datetime.now() - timedelta(days=7)
+            ).exists()
+
+            if not ultima_notificacao:
+                Notificacao.objects.create(
+                    user=pcd.user,
+                    tipo='sistema',
+                    titulo=f'🎯 Nova vaga compatível! Match {nivel} ({score}%)',
+                    mensagem=f'A vaga "{vaga.titulo}" da empresa {vaga.empresa.razao_social} '
+                            f'tem {nivel.lower()} compatibilidade com seu perfil.\n\n'
+                            f'📍 Localização: {vaga.cidade}/{vaga.uf}\n'
+                            f'💼 Modalidade: {vaga.get_modalidade_display()}\n\n'
+                            f'Acesse seu dashboard para ver mais detalhes e se candidatar!'
+                )
+                notificacoes_enviadas += 1
+
+    return {
+        'total_vagas_processadas': total_vagas,
+        'total_pcds_elegiveis': total_pcds,
+        'matches_encontrados': matches_encontrados,
+        'notificacoes_enviadas': notificacoes_enviadas,
+        'executado_em': datetime.now().strftime('%d/%m/%Y %H:%M:%S')
+    }

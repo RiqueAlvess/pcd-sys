@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard Médico - Portal PCD{% endblock %}
+
+{% block body %}
+<div class="min-h-screen bg-gray-100">
+  <!-- Header -->
+  <header class="bg-purple-700 text-white p-4 shadow-lg">
+    <div class="container mx-auto flex justify-between items-center">
+      <h1 class="text-2xl font-bold">Dashboard Médico</h1>
+      <div class="flex gap-4 items-center">
+        <span>Olá, Dr(a). {{ request.user.medicoprofile.nome_completo|default:request.user.username }}</span>
+        <a href="{% url 'logout' %}" class="bg-purple-900 hover:bg-purple-800 px-4 py-2 rounded">Sair</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="container mx-auto p-6">
+    <!-- Mensagens -->
+    {% if messages %}
+      {% for message in messages %}
+        <div class="mb-4 p-4 rounded {% if message.tags == 'success' %}bg-green-100 text-green-800{% elif message.tags == 'error' %}bg-red-100 text-red-800{% else %}bg-blue-100 text-blue-800{% endif %}">
+          {{ message }}
+        </div>
+      {% endfor %}
+    {% endif %}
+
+    <!-- Statistics Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <!-- PCDs Pendentes -->
+      <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-yellow-500">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-gray-500 text-sm uppercase">PCDs Pendentes</p>
+            <p class="text-3xl font-bold text-gray-800">{{ pcds_pendentes }}</p>
+          </div>
+          <div class="text-yellow-500 text-4xl">⏳</div>
+        </div>
+        <a href="{% url 'listar_pcds_pendentes' %}" class="mt-4 inline-block text-purple-600 hover:text-purple-800 text-sm font-semibold">
+          Ver Todos →
+        </a>
+      </div>
+
+      <!-- Vagas Pendentes -->
+      <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-orange-500">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-gray-500 text-sm uppercase">Vagas Pendentes</p>
+            <p class="text-3xl font-bold text-gray-800">{{ vagas_pendentes }}</p>
+          </div>
+          <div class="text-orange-500 text-4xl">📋</div>
+        </div>
+        <a href="{% url 'listar_vagas_pendentes' %}" class="mt-4 inline-block text-purple-600 hover:text-purple-800 text-sm font-semibold">
+          Ver Todas →
+        </a>
+      </div>
+
+      <!-- PCDs Avaliados -->
+      <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-green-500">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-gray-500 text-sm uppercase">PCDs Avaliados</p>
+            <p class="text-3xl font-bold text-gray-800">{{ pcds_avaliados }}</p>
+          </div>
+          <div class="text-green-500 text-4xl">✅</div>
+        </div>
+      </div>
+
+      <!-- Vagas Avaliadas -->
+      <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-blue-500">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-gray-500 text-sm uppercase">Vagas Avaliadas</p>
+            <p class="text-3xl font-bold text-gray-800">{{ vagas_avaliadas }}</p>
+          </div>
+          <div class="text-blue-500 text-4xl">🏢</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <!-- Avaliar PCDs -->
+      <div class="bg-white rounded-lg shadow-md p-6">
+        <h2 class="text-xl font-bold mb-4 text-purple-700">Avaliação de PCDs</h2>
+        <p class="text-gray-600 mb-4">Classifique usuários PCD com base nas informações e documentos fornecidos.</p>
+        <div class="flex gap-2">
+          <a href="{% url 'listar_pcds_pendentes' %}" class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-semibold transition">
+            Avaliar PCDs
+          </a>
+          <a href="{% url 'listar_pcds_pendentes' %}?status=todos" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-6 py-3 rounded-lg font-semibold transition">
+            Ver Todas
+          </a>
+        </div>
+      </div>
+
+      <!-- Avaliar Vagas -->
+      <div class="bg-white rounded-lg shadow-md p-6">
+        <h2 class="text-xl font-bold mb-4 text-purple-700">Avaliação de Vagas</h2>
+        <p class="text-gray-600 mb-4">Defina quais deficiências são elegíveis para cada vaga cadastrada.</p>
+        <div class="flex gap-2">
+          <a href="{% url 'listar_vagas_pendentes' %}" class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-semibold transition">
+            Avaliar Vagas
+          </a>
+          <a href="{% url 'listar_vagas_pendentes' %}?status=todos" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-6 py-3 rounded-lg font-semibold transition">
+            Ver Todas
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Status Legend -->
+    <div class="mt-8 bg-white rounded-lg shadow-md p-6">
+      <h2 class="text-xl font-bold mb-4 text-purple-700">Legenda de Classificação PCD</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="flex items-center gap-2">
+          <span class="text-2xl">✅</span>
+          <span class="text-gray-700">Enquadrável</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-2xl">⚠️</span>
+          <span class="text-gray-700">Sugestivo de Enquadrável</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-2xl">🚫</span>
+          <span class="text-gray-700">Não Enquadrável</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-2xl">🩺</span>
+          <span class="text-gray-700">Avaliação Adicional</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-2xl">📄</span>
+          <span class="text-gray-700">Necessita Laudo</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-2xl">⏳</span>
+          <span class="text-gray-700">Pendente</span>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+{% endblock %}

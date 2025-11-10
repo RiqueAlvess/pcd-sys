@@ -121,10 +121,12 @@ class Notificacao(models.Model):
 # Extensão do modelo PCDProfile para informações adicionais
 class PerfilPCDExtendido(models.Model):
     STATUS_MEDICO_CHOICES = [
-        ('pendente', 'Pendente'),
-        ('enquadravel', 'Enquadrável'),
-        ('sugestivo', 'Sugestivo'),
-        ('nao_enquadravel', 'Não Enquadrável'),
+        ('pendente', '⏳ Pendente de Avaliação'),
+        ('enquadravel', '✅ Enquadrável'),
+        ('sugestivo', '⚠️ Sugestivo de Enquadrável'),
+        ('nao_enquadravel', '🚫 Não Enquadrável'),
+        ('avaliacao_adicional', '🩺 Necessidade de Avaliação Médica Adicional'),
+        ('necessita_laudo', '📄 Necessidade de Laudo Detalhado ou Exame Atualizado'),
     ]
 
     pcd_profile = models.OneToOneField(PCDProfile, on_delete=models.CASCADE, related_name='perfil_extendido')
@@ -135,7 +137,10 @@ class PerfilPCDExtendido(models.Model):
     bairro = models.CharField(max_length=100, blank=True)
     cidade = models.CharField(max_length=100, blank=True)
     uf = models.CharField(max_length=2, blank=True)
-    status_medico = models.CharField(max_length=20, choices=STATUS_MEDICO_CHOICES, default='pendente')
+    status_medico = models.CharField(max_length=30, choices=STATUS_MEDICO_CHOICES, default='pendente')
+    observacoes_medicas = models.TextField(blank=True, help_text="Observações do médico avaliador")
+    data_avaliacao_medica = models.DateTimeField(null=True, blank=True)
+    medico_avaliador = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='avaliacoes_realizadas', limit_choices_to={'role': 'medico'})
     percentual_completude = models.IntegerField(default=50)
     
     def calcular_completude(self):

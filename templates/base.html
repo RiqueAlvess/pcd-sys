@@ -7,6 +7,19 @@
   <title>{% block title %}Portal PCD{% endblock %}</title>
   <link rel="icon" href="{% static 'icon.png' %}" />
   <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+  <style>
+    /* Custom gradient background for PCD theme */
+    .gradient-bg {
+      background: linear-gradient(135deg, #9333ea 0%, #7c3aed 50%, #6b21a8 100%);
+    }
+
+    /* Glass effect for form containers */
+    .glass-effect {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+  </style>
 </head>
 <body class="bg-gray-50 text-gray-900 font-sans antialiased">
   {% comment %}

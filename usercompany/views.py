@@ -583,46 +583,55 @@ def notificacoes_empresa(request):
         return redirect('landing')
 
     empresa = get_object_or_404(Empresa, user=request.user)
-    
+
     if request.method == 'POST':
         # Ações via AJAX
         try:
             data = json.loads(request.body)
             action = data.get('action')
-            
+
             if action == 'marcar_lida':
                 notif_id = data.get('notificacao_id')
-                notif = NotificacaoEmpresa.objects.get(id=notif_id, empresa=empresa)
+                if not notif_id:
+                    return JsonResponse({'error': 'ID da notificação não fornecido'}, status=400)
+
+                notif = get_object_or_404(NotificacaoEmpresa, id=notif_id, empresa=empresa)
                 notif.lida = True
                 notif.save()
                 return JsonResponse({'success': True})
-                
+
             elif action == 'marcar_todas_lidas':
-                NotificacaoEmpresa.objects.filter(empresa=empresa, lida=False).update(lida=True)
-                return JsonResponse({'success': True})
-                
+                count = NotificacaoEmpresa.objects.filter(empresa=empresa, lida=False).update(lida=True)
+                return JsonResponse({'success': True, 'count': count})
+
             elif action == 'excluir':
                 notif_id = data.get('notificacao_id')
-                NotificacaoEmpresa.objects.filter(id=notif_id, empresa=empresa).delete()
+                if not notif_id:
+                    return JsonResponse({'error': 'ID da notificação não fornecido'}, status=400)
+
+                notif = get_object_or_404(NotificacaoEmpresa, id=notif_id, empresa=empresa)
+                notif.delete()
                 return JsonResponse({'success': True})
-                
+
+            else:
+                return JsonResponse({'error': 'Ação não reconhecida'}, status=400)
+
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'JSON inválido'}, status=400)
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=400)
-    
-    notificacoes = NotificacaoEmpresa.objects.filter(empresa=empresa)
-    
-    # Marcar como lidas as visualizadas
-    notificacoes.filter(lida=False).update(lida=True)
-    
+
+    notificacoes = NotificacaoEmpresa.objects.filter(empresa=empresa).order_by('-criada_em')
+
     # Paginação
     paginator = Paginator(notificacoes, 15)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
-    
+
     context = {
         'page_obj': page_obj,
     }
-    
+
     return render(request, 'usercompany/notificacoes_empresa.html', context)
 
 

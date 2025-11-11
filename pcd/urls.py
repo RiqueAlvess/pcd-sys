@@ -9,6 +9,7 @@ urlpatterns = [
     path('admin/', admin.site.urls, name='adminpage'),
     path('core/', include('core.urls')),
     path('userpcd/', include('userpcd.urls')),
+    path('usercore/', include('userpcd.urls')),  # Alias para userpcd (usado em templates)
     path('usercompany/', include('usercompany.urls')),
     path('medico/', include('usercompany.urls_medico')),
 

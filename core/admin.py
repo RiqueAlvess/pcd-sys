@@ -83,6 +83,73 @@ class UserAdmin(DjangoUserAdmin, ModelAdmin):
 
 # ----------------- OUTROS MODELOS SIMPLES ------------------ #
 
+@admin.register(Empresa)
+class EmpresaAdmin(ModelAdmin):
+    list_display = ("id", "razao_social", "cnpj", "telefone_principal", "criado_em")
+    search_fields = ("razao_social", "cnpj")
+    list_filter = ("tamanho", "criado_em")
+    readonly_fields = ("criado_em",)
+    fieldsets = (
+        ("Informações da Empresa", {
+            "fields": ("user", "razao_social", "cnpj", "cnae_principal", "tamanho")
+        }),
+        ("Contatos", {
+            "fields": ("telefone_principal", "telefone_secundario", "site")
+        }),
+        ("Datas", {
+            "fields": ("criado_em",)
+        }),
+    )
+
+
+@admin.register(PCDProfile)
+class PCDProfileAdmin(ModelAdmin):
+    list_display = ("id", "user", "nome_completo", "cpf", "data_nascimento", "telefone")
+    search_fields = ("nome_completo", "cpf", "user__username", "user__email")
+    list_filter = ("data_nascimento", "criado_em")
+    readonly_fields = ("criado_em",)
+    filter_horizontal = ("deficiencias",)
+    fieldsets = (
+        ("Informações do Usuário", {
+            "fields": ("user", "nome_completo", "cpf", "data_nascimento")
+        }),
+        ("Contato", {
+            "fields": ("telefone", "endereco")
+        }),
+        ("Dados da Deficiência", {
+            "fields": ("deficiencias",)
+        }),
+        ("Informações Profissionais", {
+            "fields": ("formacao_academica", "experiencia_profissional")
+        }),
+        ("Documentos", {
+            "fields": ("curriculo", "laudos")
+        }),
+        ("Dados de Nome Social", {
+            "fields": ("nome_mae",)
+        }),
+        ("Datas", {
+            "fields": ("criado_em",)
+        }),
+    )
+
+
+@admin.register(MedicoProfile)
+class MedicoProfileAdmin(ModelAdmin):
+    list_display = ("id", "user", "nome_completo", "crm", "especialidade", "criado_em")
+    search_fields = ("nome_completo", "crm", "especialidade", "user__username", "user__email")
+    list_filter = ("especialidade", "criado_em")
+    readonly_fields = ("criado_em", "atualizado_em")
+    fieldsets = (
+        ("Informações do Médico", {
+            "fields": ("user", "nome_completo", "crm", "especialidade")
+        }),
+        ("Datas", {
+            "fields": ("criado_em", "atualizado_em")
+        }),
+    )
+
+
 @admin.register(CategoriaDeficiencia)
 class CategoriaDeficienciaAdmin(ModelAdmin):
     list_display  = ("nome",)

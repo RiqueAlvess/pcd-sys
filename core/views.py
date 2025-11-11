@@ -19,6 +19,8 @@ def dashboard(request):
         return redirect('dashboard_pcd')
     elif user.is_empresa():
         return redirect('dashboard_empresa')
+    elif user.is_medico():
+        return redirect('dashboard_medico')
     elif user.is_root():
         return redirect('admin:index')
     else:

@@ -10,6 +10,7 @@ urlpatterns = [
     path('core/', include('core.urls')),
     path('userpcd/', include('userpcd.urls')),
     path('usercompany/', include('usercompany.urls')),
+    path('medico/', include('usercompany.urls_medico')),
 
     # API REST endpoints
     path('api/pcd/', include('userpcd.urls_api')),

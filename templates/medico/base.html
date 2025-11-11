@@ -1,0 +1,87 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Painel Médico - Portal PCD{% endblock %}</title>
+  <link rel="icon" href="{% static 'icon.png' %}" />
+  <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+  <style>
+    /* Custom gradient for medical theme */
+    .gradient-medico {
+      background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 50%, #0369a1 100%);
+    }
+
+    /* Glass effect for cards */
+    .glass-effect {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    /* Status badges */
+    .badge-enquadravel { @apply bg-green-100 text-green-800; }
+    .badge-sugestivo { @apply bg-yellow-100 text-yellow-800; }
+    .badge-nao-enquadravel { @apply bg-red-100 text-red-800; }
+    .badge-avaliacao-adicional { @apply bg-blue-100 text-blue-800; }
+    .badge-exame-necessario { @apply bg-purple-100 text-purple-800; }
+    .badge-pendente { @apply bg-gray-100 text-gray-800; }
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-900 font-sans antialiased">
+  <!-- Navbar -->
+  <nav class="gradient-medico shadow-lg">
+    <div class="container mx-auto px-4">
+      <div class="flex items-center justify-between h-16">
+        <div class="flex items-center space-x-8">
+          <a href="{% url 'dashboard_medico' %}" class="text-white font-bold text-xl">
+            🩺 Painel Médico
+          </a>
+          <div class="hidden md:flex space-x-4">
+            <a href="{% url 'dashboard_medico' %}" class="text-white hover:text-blue-100 px-3 py-2 rounded-md">
+              Dashboard
+            </a>
+            <a href="{% url 'lista_pcd_pendentes' %}" class="text-white hover:text-blue-100 px-3 py-2 rounded-md">
+              Avaliar PCDs
+            </a>
+            <a href="{% url 'vagas_pendentes' %}" class="text-white hover:text-blue-100 px-3 py-2 rounded-md">
+              Avaliar Vagas
+            </a>
+            <a href="{% url 'historico_classificacoes' %}" class="text-white hover:text-blue-100 px-3 py-2 rounded-md">
+              Histórico
+            </a>
+          </div>
+        </div>
+        <div class="flex items-center space-x-4">
+          <span class="text-white">Dr(a). {{ request.user.username }}</span>
+          <a href="{% url 'logout' %}" class="text-white hover:text-blue-100">Sair</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Messages -->
+  {% if messages %}
+  <div class="container mx-auto px-4 mt-4">
+    {% for message in messages %}
+    <div class="{% if message.tags == 'success' %}bg-green-100 border-green-400 text-green-700{% elif message.tags == 'error' %}bg-red-100 border-red-400 text-red-700{% else %}bg-blue-100 border-blue-400 text-blue-700{% endif %} border px-4 py-3 rounded mb-4">
+      {{ message }}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- Main Content -->
+  <main class="container mx-auto px-4 py-8">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-gray-800 text-white mt-12 py-6">
+    <div class="container mx-auto px-4 text-center">
+      <p>&copy; 2025 Portal PCD - Painel Médico</p>
+    </div>
+  </footer>
+</body>
+</html>

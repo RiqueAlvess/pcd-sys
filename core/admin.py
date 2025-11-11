@@ -9,6 +9,7 @@ from .models import (
     PCDProfile,
     MedicoProfile,
     CategoriaDeficiencia,
+    ClassificacaoPCD,
 )
 
 # ---------- INLINES para anexar perfis ao usuário ---------- #
@@ -87,3 +88,24 @@ class UserAdmin(DjangoUserAdmin, ModelAdmin):
 class CategoriaDeficienciaAdmin(ModelAdmin):
     list_display  = ("nome",)
     search_fields = ("nome",)
+
+
+@admin.register(ClassificacaoPCD)
+class ClassificacaoPCDAdmin(ModelAdmin):
+    list_display = ("pcd", "medico", "status", "criado_em")
+    list_filter = ("status", ("criado_em", RangeDateFilter))
+    search_fields = ("pcd__nome_completo", "pcd__cpf", "medico__username", "observacao")
+    readonly_fields = ("criado_em", "atualizado_em")
+    ordering = ("-criado_em",)
+
+    fieldsets = (
+        ("Informações Principais", {
+            "fields": ("pcd", "medico", "status")
+        }),
+        ("Observações", {
+            "fields": ("observacao", "documentos_analisados")
+        }),
+        ("Datas", {
+            "fields": ("criado_em", "atualizado_em")
+        }),
+    )

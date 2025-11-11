@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.contrib.messages import constants
 from .models import User, Empresa, PCDProfile, CategoriaDeficiencia
@@ -93,6 +93,15 @@ def login_view(request):
     return render(request, 'core/login.html')
 
 
+def logout_view(request):
+    """
+    View de logout que aceita tanto GET quanto POST
+    """
+    logout(request)
+    messages.add_message(request, constants.SUCCESS, 'Logout realizado com sucesso.')
+    return redirect('login')
+
+
 def smart_redirect_after_login(user, request):
     """
     Função auxiliar para redirecionamento seguro após login
@@ -109,13 +118,13 @@ def smart_redirect_after_login(user, request):
             reverse('dashboard_empresa')
             return redirect('dashboard_empresa')
         elif user.is_medico():
-            reverse('dashboard_medico') 
+            reverse('dashboard_medico')
             return redirect('dashboard_medico')
         elif user.is_root():
             return redirect('admin:index')
         else:
             return redirect('escolha_tipo')
-            
+
     except NoReverseMatch:
         # Se a URL específica não existir, usa fallbacks
         if user.is_pcd():
@@ -128,7 +137,7 @@ def smart_redirect_after_login(user, request):
             return redirect('admin:index')
         else:
             return redirect('escolha_tipo')
-    
+
     except Exception as e:
         # Fallback final em caso de qualquer outro erro
         messages.warning(request, 'Redirecionando para página inicial.')

@@ -31,7 +31,7 @@ class Empresa(models.Model):
     razao_social = models.CharField(max_length=255)
     cnae_principal = models.CharField(max_length=10)
     tamanho = models.CharField(max_length=10)
-    site = models.URLField(blank=True)
+    site = models.URLField(blank=True, null=True)
     criado_em = models.DateTimeField(auto_now_add=True)
 
 class PCDProfile(models.Model):

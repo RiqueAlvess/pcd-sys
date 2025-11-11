@@ -77,7 +77,7 @@ def lista_pcd_pendentes(request):
     # Query base: PCDs com perfil estendido
     pcds = PCDProfile.objects.select_related(
         'user',
-        'perfilpcdextendido'
+        'perfil_extendido'
     ).prefetch_related(
         'deficiencias',
         'classificacoes',
@@ -117,7 +117,7 @@ def avaliar_pcd(request, pcd_id):
     """Formulário para avaliar e classificar um PCD"""
 
     pcd = get_object_or_404(
-        PCDProfile.objects.select_related('user', 'perfilpcdextendido')
+        PCDProfile.objects.select_related('user', 'perfil_extendido')
                           .prefetch_related('deficiencias', 'classificacoes'),
         id=pcd_id
     )
@@ -144,7 +144,7 @@ def avaliar_pcd(request, pcd_id):
 
         # Atualizar status_medico no PerfilPCDExtendido (se existir)
         try:
-            perfil_estendido = pcd.perfilpcdextendido
+            perfil_estendido = pcd.perfil_extendido
             # Mapear status da classificação para status do perfil
             if status == 'enquadravel':
                 perfil_estendido.status_medico = 'enquadravel'

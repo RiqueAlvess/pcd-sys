@@ -7,7 +7,10 @@
   <title>{% block title %}Painel Médico - Portal PCD{% endblock %}</title>
   <link rel="icon" href="{% static 'icon.png' %}" />
   <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
+    body { font-family: 'Inter', sans-serif; }
+
     /* Custom gradient for medical theme */
     .gradient-medico {
       background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 50%, #0369a1 100%);
@@ -27,61 +30,343 @@
     .badge-avaliacao-adicional { @apply bg-blue-100 text-blue-800; }
     .badge-exame-necessario { @apply bg-purple-100 text-purple-800; }
     .badge-pendente { @apply bg-gray-100 text-gray-800; }
+
+    /* Toast Animation */
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    .toast-enter {
+      animation: slideIn 0.3s ease-out;
+    }
+
+    /* Focus visible para acessibilidade */
+    .focus-visible:focus {
+      outline: 2px solid #0ea5e9;
+      outline-offset: 2px;
+    }
+
+    /* Menu mobile */
+    .menu-mobile {
+      transform: translateX(-100%);
+      transition: transform 0.3s ease-in-out;
+    }
+
+    .menu-mobile.open {
+      transform: translateX(0);
+    }
+
+    /* Loading spinner */
+    .spinner {
+      border: 2px solid #f3f3f3;
+      border-top: 2px solid #0ea5e9;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
   </style>
 </head>
-<body class="bg-gray-50 text-gray-900 font-sans antialiased">
-  <!-- Navbar -->
-  <nav class="gradient-medico shadow-lg">
-    <div class="container mx-auto px-4">
-      <div class="flex items-center justify-between h-16">
-        <div class="flex items-center space-x-8">
-          <a href="{% url 'dashboard_medico' %}" class="text-white font-bold text-xl">
-            🩺 Painel Médico
+<body class="bg-gray-50 text-gray-900 antialiased">
+  <!-- Navbar Acessível -->
+  <nav class="bg-white border-b border-gray-200 sticky top-0 z-50" role="navigation" aria-label="Navegação principal">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between h-16">
+        <!-- Logo -->
+        <div class="flex items-center">
+          <a href="{% url 'dashboard_medico' %}" class="flex items-center focus-visible" aria-label="Ir para dashboard">
+            <div class="flex-shrink-0">
+              <div class="h-8 w-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+                <span class="text-white font-bold text-sm">M</span>
+              </div>
+            </div>
+            <span class="ml-2 text-xl font-bold text-gray-800 hidden sm:block">Painel Médico</span>
           </a>
-          <div class="hidden md:flex space-x-4">
-            <a href="{% url 'dashboard_medico' %}" class="text-white hover:text-blue-100 px-3 py-2 rounded-md">
-              Dashboard
-            </a>
-            <a href="{% url 'lista_pcd_pendentes' %}" class="text-white hover:text-blue-100 px-3 py-2 rounded-md">
-              Avaliar PCDs
-            </a>
-            <a href="{% url 'vagas_pendentes' %}" class="text-white hover:text-blue-100 px-3 py-2 rounded-md">
-              Avaliar Vagas
-            </a>
-            <a href="{% url 'historico_classificacoes' %}" class="text-white hover:text-blue-100 px-3 py-2 rounded-md">
-              Histórico
-            </a>
+        </div>
+
+        <!-- Desktop Menu -->
+        <div class="hidden md:flex items-center space-x-4">
+          <a href="{% url 'dashboard_medico' %}"
+             class="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium focus-visible transition-colors"
+             aria-label="Dashboard">
+            <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"/>
+            </svg>
+            Dashboard
+          </a>
+
+          <a href="{% url 'lista_pcd_pendentes' %}"
+             class="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium focus-visible transition-colors"
+             aria-label="Avaliar PCDs">
+            <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+            Avaliar PCDs
+          </a>
+
+          <a href="{% url 'vagas_pendentes' %}"
+             class="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium focus-visible transition-colors"
+             aria-label="Avaliar Vagas">
+            <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 002 2h2a2 2 0 002-2V6"/>
+            </svg>
+            Avaliar Vagas
+          </a>
+
+          <a href="{% url 'historico_classificacoes' %}"
+             class="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium focus-visible transition-colors"
+             aria-label="Histórico">
+            <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            Histórico
+          </a>
+
+          <!-- User Menu -->
+          <div class="relative">
+            <button id="user-menu-btn"
+                    class="flex items-center text-gray-600 hover:text-blue-600 focus-visible rounded-full"
+                    aria-label="Menu do usuário"
+                    aria-expanded="false"
+                    aria-haspopup="true">
+              <div class="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center">
+                <span class="text-blue-600 font-medium text-sm">
+                  {{ request.user.username|slice:":1"|upper }}
+                </span>
+              </div>
+              <svg class="ml-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+              </svg>
+            </button>
+
+            <div id="user-menu"
+                 class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 hidden z-50"
+                 role="menu"
+                 aria-labelledby="user-menu-btn">
+              <div class="p-2">
+                <div class="px-3 py-2 text-sm text-gray-500 border-b border-gray-200">
+                  Dr(a). {{ request.user.username }}
+                </div>
+                <a href="{% url 'logout' %}"
+                   class="block px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded focus-visible mt-2"
+                   role="menuitem">
+                  <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                  </svg>
+                  Sair
+                </a>
+              </div>
+            </div>
           </div>
         </div>
-        <div class="flex items-center space-x-4">
-          <span class="text-white">Dr(a). {{ request.user.username }}</span>
-          <a href="{% url 'logout' %}" class="text-white hover:text-blue-100">Sair</a>
+
+        <!-- Mobile menu button -->
+        <div class="md:hidden flex items-center">
+          <button id="mobile-menu-btn"
+                  class="text-gray-600 hover:text-blue-600 focus-visible p-2"
+                  aria-label="Abrir menu de navegação"
+                  aria-expanded="false"
+                  aria-controls="mobile-menu">
+            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+            </svg>
+          </button>
         </div>
       </div>
     </div>
+
+    <!-- Mobile menu -->
+    <div id="mobile-menu" class="md:hidden menu-mobile fixed inset-y-0 left-0 w-64 bg-white shadow-lg z-50">
+      <div class="p-4 border-b border-gray-200">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center">
+            <div class="h-10 w-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+              <span class="text-white font-bold">M</span>
+            </div>
+            <span class="ml-3 text-lg font-bold text-gray-800">Painel Médico</span>
+          </div>
+          <button id="close-mobile-menu"
+                  class="text-gray-600 hover:text-blue-600 focus-visible"
+                  aria-label="Fechar menu">
+            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <nav class="p-4" role="navigation" aria-label="Menu mobile">
+        <a href="{% url 'dashboard_medico' %}"
+           class="flex items-center text-gray-700 hover:text-blue-600 py-3 px-2 rounded focus-visible">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"/>
+          </svg>
+          Dashboard
+        </a>
+
+        <a href="{% url 'lista_pcd_pendentes' %}"
+           class="flex items-center text-gray-700 hover:text-blue-600 py-3 px-2 rounded focus-visible">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+          </svg>
+          Avaliar PCDs
+        </a>
+
+        <a href="{% url 'vagas_pendentes' %}"
+           class="flex items-center text-gray-700 hover:text-blue-600 py-3 px-2 rounded focus-visible">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 002 2h2a2 2 0 002-2V6"/>
+          </svg>
+          Avaliar Vagas
+        </a>
+
+        <a href="{% url 'historico_classificacoes' %}"
+           class="flex items-center text-gray-700 hover:text-blue-600 py-3 px-2 rounded focus-visible">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          Histórico
+        </a>
+
+        <hr class="my-4">
+
+        <div class="px-2 py-3 text-sm text-gray-500">
+          Dr(a). {{ request.user.username }}
+        </div>
+
+        <a href="{% url 'logout' %}"
+           class="flex items-center text-red-600 hover:text-red-700 py-3 px-2 rounded focus-visible mt-4">
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+          </svg>
+          Sair
+        </a>
+      </nav>
+    </div>
   </nav>
 
-  <!-- Messages -->
-  {% if messages %}
-  <div class="container mx-auto px-4 mt-4">
-    {% for message in messages %}
-    <div class="{% if message.tags == 'success' %}bg-green-100 border-green-400 text-green-700{% elif message.tags == 'error' %}bg-red-100 border-red-400 text-red-700{% else %}bg-blue-100 border-blue-400 text-blue-700{% endif %} border px-4 py-3 rounded mb-4">
-      {{ message }}
-    </div>
-    {% endfor %}
+  <!-- Toast Container -->
+  <div id="toast-container" class="fixed top-20 right-4 z-50 space-y-2" aria-live="polite" aria-atomic="true">
+    <!-- Toasts serão inseridos aqui via JavaScript -->
   </div>
+
+  <!-- Overlay para mobile menu -->
+  <div id="mobile-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden md:hidden"></div>
+
+  <!-- Mensagens Django -->
+  {% if messages %}
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+      {% for message in messages %}
+        <div class="p-4 rounded-lg mb-4 flex items-center {% if message.tags == 'success' %}bg-green-50 text-green-700{% elif message.tags == 'error' %}bg-red-50 text-red-700{% else %}bg-blue-50 text-blue-700{% endif %} toast-enter">
+          {% if message.tags == 'error' %}
+            <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+            </svg>
+          {% else %}
+            <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+            </svg>
+          {% endif %}
+          <span class="text-sm font-medium">{{ message }}</span>
+          <button onclick="this.parentElement.remove()"
+                  class="ml-auto text-current opacity-70 hover:opacity-100 focus-visible p-1"
+                  aria-label="Fechar mensagem">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+      {% endfor %}
+    </div>
   {% endif %}
 
-  <!-- Main Content -->
-  <main class="container mx-auto px-4 py-8">
+  <!-- Conteúdo Principal -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6" role="main">
     {% block content %}{% endblock %}
   </main>
 
-  <!-- Footer -->
-  <footer class="bg-gray-800 text-white mt-12 py-6">
-    <div class="container mx-auto px-4 text-center">
-      <p>&copy; 2025 Portal PCD - Painel Médico</p>
-    </div>
-  </footer>
+  <!-- JavaScript -->
+  <script>
+    // Menu Mobile
+    const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+    const mobileMenu = document.getElementById('mobile-menu');
+    const closeMobileMenu = document.getElementById('close-mobile-menu');
+    const mobileOverlay = document.getElementById('mobile-overlay');
+
+    function toggleMobileMenu() {
+      mobileMenu.classList.toggle('open');
+      mobileOverlay.classList.toggle('hidden');
+      document.body.classList.toggle('overflow-hidden');
+
+      const isOpen = mobileMenu.classList.contains('open');
+      mobileMenuBtn.setAttribute('aria-expanded', isOpen);
+    }
+
+    mobileMenuBtn.addEventListener('click', toggleMobileMenu);
+    closeMobileMenu.addEventListener('click', toggleMobileMenu);
+    mobileOverlay.addEventListener('click', toggleMobileMenu);
+
+    // User Menu
+    const userMenuBtn = document.getElementById('user-menu-btn');
+    const userMenu = document.getElementById('user-menu');
+
+    userMenuBtn.addEventListener('click', () => {
+      userMenu.classList.toggle('hidden');
+      const isOpen = !userMenu.classList.contains('hidden');
+      userMenuBtn.setAttribute('aria-expanded', isOpen);
+    });
+
+    // Fechar dropdowns ao clicar fora
+    document.addEventListener('click', (e) => {
+      if (!userMenuBtn.contains(e.target) && !userMenu.contains(e.target)) {
+        userMenu.classList.add('hidden');
+        userMenuBtn.setAttribute('aria-expanded', 'false');
+      }
+    });
+
+    // Toast helper
+    function showToast(message, type = 'success') {
+      const toast = document.createElement('div');
+      const bgColor = type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700';
+      const icon = type === 'success'
+        ? '<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>'
+        : '<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>';
+
+      toast.className = `p-4 rounded-lg shadow-lg ${bgColor} toast-enter flex items-center max-w-sm`;
+      toast.innerHTML = `
+        <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+          ${icon}
+        </svg>
+        <span class="text-sm font-medium">${message}</span>
+        <button onclick="this.parentElement.remove()"
+                class="ml-auto text-current opacity-70 hover:opacity-100 focus-visible p-1"
+                aria-label="Fechar">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      `;
+
+      document.getElementById('toast-container').appendChild(toast);
+
+      // Auto-remove após 5 segundos
+      setTimeout(() => {
+        if (toast.parentElement) {
+          toast.remove();
+        }
+      }, 5000);
+    }
+
+    // Exposar função globalmente
+    window.showToast = showToast;
+  </script>
+
+  {% block extra_js %}{% endblock %}
 </body>
 </html>

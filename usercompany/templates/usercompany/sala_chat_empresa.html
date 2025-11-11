@@ -1,0 +1,141 @@
+{% extends 'usercompany/base.html' %}
+{% load static %}
+
+{% block title %}Chat - {{ candidato.nome_completo|default:candidato.user.username }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <!-- Cabeçalho -->
+  <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-4">
+        <a href="{% url 'lista_conversas_empresa' %}"
+           class="text-gray-400 hover:text-gray-600 transition-colors">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+          </svg>
+        </a>
+        <div class="flex-shrink-0">
+          <div class="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center">
+            <span class="text-lg font-semibold text-emerald-600">
+              {{ candidato.user.username|slice:":1"|upper }}
+            </span>
+          </div>
+        </div>
+        <div>
+          <h1 class="text-xl font-bold text-gray-900">
+            {{ candidato.nome_completo|default:candidato.user.username }}
+          </h1>
+          {% if vaga %}
+            <p class="text-sm text-gray-500">Vaga: {{ vaga.titulo }}</p>
+          {% endif %}
+          {% if candidatura %}
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+              {% if candidatura.status == 'aprovado' %}bg-green-100 text-green-800
+              {% elif candidatura.status == 'rejeitado' %}bg-red-100 text-red-800
+              {% elif candidatura.status == 'entrevista' %}bg-blue-100 text-blue-800
+              {% elif candidatura.status == 'em_analise' %}bg-yellow-100 text-yellow-800
+              {% else %}bg-gray-100 text-gray-800{% endif %}">
+              {{ candidatura.get_status_display }}
+            </span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Área de Chat -->
+  <div class="bg-white rounded-lg shadow-sm overflow-hidden" style="height: calc(100vh - 350px); min-height: 500px;">
+    <div class="flex flex-col h-full">
+      <!-- Mensagens -->
+      <div id="mensagens-container" class="flex-1 overflow-y-auto p-6 space-y-4">
+        {% if mensagens %}
+          {% for mensagem in mensagens %}
+            <div class="flex {% if mensagem.remetente_empresa %}justify-end{% else %}justify-start{% endif %}">
+              <div class="max-w-xs lg:max-w-md">
+                <div class="{% if mensagem.remetente_empresa %}bg-emerald-600 text-white{% else %}bg-gray-100 text-gray-900{% endif %} rounded-lg px-4 py-2 shadow">
+                  <p class="text-sm break-words">{{ mensagem.conteudo }}</p>
+                </div>
+                <div class="flex items-center gap-2 mt-1 px-2">
+                  <p class="text-xs text-gray-400">
+                    {{ mensagem.enviada_em|date:"d/m/Y H:i" }}
+                  </p>
+                  {% if mensagem.remetente_empresa %}
+                    {% if mensagem.lida %}
+                      <svg class="w-4 h-4 text-emerald-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                      </svg>
+                      <span class="text-xs text-gray-400">Lida</span>
+                    {% endif %}
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        {% else %}
+          <div class="text-center py-12">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+            </svg>
+            <h3 class="mt-2 text-sm font-medium text-gray-900">Nenhuma mensagem</h3>
+            <p class="mt-1 text-sm text-gray-500">
+              Inicie a conversa enviando a primeira mensagem.
+            </p>
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Formulário de Envio -->
+      <div class="border-t border-gray-200 p-4 bg-gray-50">
+        <form method="POST" class="flex gap-3">
+          {% csrf_token %}
+          <textarea
+            name="mensagem"
+            rows="2"
+            class="flex-1 block w-full rounded-lg border-gray-300 shadow-sm focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm resize-none"
+            placeholder="Digite sua mensagem..."
+            required
+            maxlength="1000"
+          ></textarea>
+          <button
+            type="submit"
+            class="inline-flex items-center px-6 py-3 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+            </svg>
+            <span class="ml-2 hidden sm:inline">Enviar</span>
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Auto-scroll para última mensagem -->
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const container = document.getElementById('mensagens-container');
+    if (container) {
+      container.scrollTop = container.scrollHeight;
+    }
+
+    // Auto-resize textarea
+    const textarea = document.querySelector('textarea[name="mensagem"]');
+    if (textarea) {
+      textarea.addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = (this.scrollHeight) + 'px';
+      });
+
+      // Submit form with Ctrl+Enter
+      textarea.addEventListener('keydown', function(e) {
+        if (e.ctrlKey && e.key === 'Enter') {
+          e.preventDefault();
+          this.form.submit();
+        }
+      });
+    }
+  });
+</script>
+{% endblock %}

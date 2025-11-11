@@ -1,0 +1,149 @@
+{% extends 'usercompany/base.html' %}
+{% load static %}
+
+{% block title %}Chat - Conversas{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <div class="mb-6">
+    <h1 class="text-3xl font-bold text-gray-900">Conversas com Candidatos</h1>
+    <p class="mt-2 text-sm text-gray-600">
+      Gerencie suas conversas com os candidatos das suas vagas
+    </p>
+  </div>
+
+  <!-- Estatísticas -->
+  <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+    <div class="flex items-center gap-4">
+      <div class="flex-1">
+        <p class="text-sm text-gray-500">Total de Conversas</p>
+        <p class="text-2xl font-bold text-gray-900">{{ total_conversas }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lista de Conversas -->
+  <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+    {% if page_obj %}
+      <div class="divide-y divide-gray-200">
+        {% for conversa in page_obj %}
+          <a href="{% url 'sala_chat_empresa' conversa.id %}"
+             class="block hover:bg-gray-50 transition-colors duration-150">
+            <div class="px-6 py-4">
+              <div class="flex items-start justify-between">
+                <div class="flex-1 min-w-0">
+                  <!-- Nome do Candidato -->
+                  <div class="flex items-center gap-3 mb-2">
+                    <div class="flex-shrink-0">
+                      <div class="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center">
+                        <span class="text-lg font-semibold text-emerald-600">
+                          {{ conversa.pcd.user.username|slice:":1"|upper }}
+                        </span>
+                      </div>
+                    </div>
+                    <div class="flex-1">
+                      <h3 class="text-base font-semibold text-gray-900">
+                        {{ conversa.pcd.nome_completo|default:conversa.pcd.user.username }}
+                      </h3>
+                      {% if conversa.vaga %}
+                        <p class="text-sm text-gray-500">
+                          Vaga: {{ conversa.vaga.titulo }}
+                        </p>
+                      {% endif %}
+                    </div>
+                  </div>
+
+                  <!-- Última Mensagem -->
+                  {% if conversa.ultima_msg %}
+                    <div class="mt-2">
+                      <p class="text-sm text-gray-600 truncate">
+                        {% if conversa.ultima_msg.remetente_empresa %}
+                          <span class="font-medium">Você:</span>
+                        {% else %}
+                          <span class="font-medium">{{ conversa.pcd.user.username }}:</span>
+                        {% endif %}
+                        {{ conversa.ultima_msg.conteudo|truncatewords:10 }}
+                      </p>
+                      <p class="text-xs text-gray-400 mt-1">
+                        {{ conversa.ultima_msg.enviada_em|date:"d/m/Y H:i" }}
+                      </p>
+                    </div>
+                  {% else %}
+                    <p class="text-sm text-gray-400 italic">Nenhuma mensagem ainda</p>
+                  {% endif %}
+                </div>
+
+                <!-- Badge de Mensagens Não Lidas -->
+                {% if conversa.nao_lidas > 0 %}
+                  <div class="flex-shrink-0 ml-4">
+                    <span class="inline-flex items-center justify-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-600 text-white">
+                      {{ conversa.nao_lidas }}
+                    </span>
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+          </a>
+        {% endfor %}
+      </div>
+
+      <!-- Paginação -->
+      {% if page_obj.has_other_pages %}
+        <div class="bg-gray-50 px-6 py-4 border-t border-gray-200">
+          <nav class="flex items-center justify-between">
+            <div class="flex-1 flex justify-between sm:hidden">
+              {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}"
+                   class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                  Anterior
+                </a>
+              {% endif %}
+              {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}"
+                   class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                  Próxima
+                </a>
+              {% endif %}
+            </div>
+            <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+              <div>
+                <p class="text-sm text-gray-700">
+                  Mostrando página <span class="font-medium">{{ page_obj.number }}</span> de
+                  <span class="font-medium">{{ page_obj.paginator.num_pages }}</span>
+                </p>
+              </div>
+              <div>
+                <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                  {% if page_obj.has_previous %}
+                    <a href="?page={{ page_obj.previous_page_number }}"
+                       class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                      Anterior
+                    </a>
+                  {% endif %}
+                  {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}"
+                       class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                      Próxima
+                    </a>
+                  {% endif %}
+                </nav>
+              </div>
+            </div>
+          </nav>
+        </div>
+      {% endif %}
+    {% else %}
+      <!-- Estado Vazio -->
+      <div class="text-center py-12">
+        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+        </svg>
+        <h3 class="mt-2 text-sm font-medium text-gray-900">Nenhuma conversa</h3>
+        <p class="mt-1 text-sm text-gray-500">
+          Você ainda não possui conversas com candidatos.
+        </p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

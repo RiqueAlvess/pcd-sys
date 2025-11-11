@@ -177,6 +177,7 @@ UNFOLD = {
                 "title": "Dashboard",
                 "icon": "dashboard",
                 "link": lambda request: "/admin/",
+                "items": [],
             },
             {
                 "title": "Usuários",
@@ -218,6 +219,7 @@ UNFOLD = {
                 "title": "Documentos",
                 "icon": "description",
                 "link": lambda request: "/admin/userpcd/documento/",
+                "items": [],
             },
             {
                 "title": "Notificações",
@@ -237,6 +239,7 @@ UNFOLD = {
                 "title": "Deficiências",
                 "icon": "accessible",
                 "link": lambda request: "/admin/core/categoriadeficiencia/",
+                "items": [],
             },
         ],
     },

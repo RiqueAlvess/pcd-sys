@@ -1,6 +1,18 @@
+"""
+Django signals for Company users.
+
+This module handles automatic actions when models are created/updated:
+- Creating extended profiles for companies and jobs
+- Sending notifications (synchronous and via WebSocket)
+- Managing selective processes
+- Updating statistics
+"""
+
 from django.db.models.signals import post_save, post_delete, pre_save
 from django.dispatch import receiver
 from django.utils import timezone
+from datetime import timedelta
+from typing import Optional
 
 from core.models import Empresa
 from userpcd.models import Vaga, Candidatura
@@ -10,7 +22,12 @@ from .models import EmpresaExtendida, VagaExtendida, ProcessoSeletivo, Notificac
 @receiver(post_save, sender=Empresa)
 def criar_empresa_extendida(sender, instance, created, **kwargs):
     """
-    Cria automaticamente uma EmpresaExtendida quando uma Empresa é criada
+    Automatically create EmpresaExtendida when Empresa is created.
+
+    Args:
+        sender: The model class (Empresa)
+        instance: The actual instance being saved
+        created: Boolean indicating if this is a new instance
     """
     if created:
         EmpresaExtendida.objects.get_or_create(
@@ -28,13 +45,17 @@ def criar_empresa_extendida(sender, instance, created, **kwargs):
 @receiver(post_save, sender=Empresa)
 def atualizar_completude_empresa(sender, instance, **kwargs):
     """
-    Atualiza o percentual de completude sempre que a Empresa é modificada
+    Update completion percentage whenever Empresa is modified.
+
+    Args:
+        sender: The model class (Empresa)
+        instance: The actual instance being saved
     """
     try:
         empresa_ext = EmpresaExtendida.objects.get(empresa=instance)
         empresa_ext.calcular_completude()
     except EmpresaExtendida.DoesNotExist:
-        # Criar empresa extendida se não existir
+        # Create extended empresa if it doesn't exist
         empresa_ext = EmpresaExtendida.objects.create(
             empresa=instance,
             percentual_completude=60
@@ -45,10 +66,15 @@ def atualizar_completude_empresa(sender, instance, **kwargs):
 @receiver(post_save, sender=Vaga)
 def criar_vaga_extendida(sender, instance, created, **kwargs):
     """
-    Cria automaticamente uma VagaExtendida quando uma Vaga é criada
+    Automatically create VagaExtendida when Vaga is created.
+
+    Args:
+        sender: The model class (Vaga)
+        instance: The actual instance being saved
+        created: Boolean indicating if this is a new instance
     """
     if created:
-        # Verificar se já existe uma VagaExtendida para esta vaga
+        # Check if VagaExtendida already exists
         if not VagaExtendida.objects.filter(vaga=instance).exists():
             VagaExtendida.objects.create(
                 vaga=instance,
@@ -57,13 +83,19 @@ def criar_vaga_extendida(sender, instance, created, **kwargs):
                 status_medico='pendente'
             )
 
+
 @receiver(post_save, sender=Candidatura)
 def notificar_empresa_novo_candidato(sender, instance, created, **kwargs):
     """
-    Notifica a empresa quando há uma nova candidatura
+    Notify company when there's a new candidatura.
+
+    Args:
+        sender: The model class (Candidatura)
+        instance: The actual instance being saved
+        created: Boolean indicating if this is a new instance
     """
     if created:
-        NotificacaoEmpresa.objects.create(
+        notificacao = NotificacaoEmpresa.objects.create(
             empresa=instance.vaga.empresa,
             tipo='novo_candidato',
             titulo='Nova Candidatura Recebida',
@@ -71,19 +103,24 @@ def notificar_empresa_novo_candidato(sender, instance, created, **kwargs):
             vaga=instance.vaga,
             candidatura=instance
         )
-        
-        # Atualizar contadores da vaga
-        try:
-            vaga_ext = VagaExtendida.objects.get(vaga=instance.vaga)
-            vaga_ext.atualizar_contadores()
-        except VagaExtendida.DoesNotExist:
-            pass
+
+        # Send notification via WebSocket asynchronously
+        enviar_notificacao_empresa_websocket(instance.vaga.empresa.id, notificacao)
+
+        # Update job counters asynchronously
+        from .tasks import atualizar_estatisticas_vaga_task
+        atualizar_estatisticas_vaga_task.delay(instance.vaga.id)
 
 
 @receiver(post_save, sender=Candidatura)
 def criar_processo_seletivo(sender, instance, created, **kwargs):
     """
-    Cria automaticamente um ProcessoSeletivo para cada candidatura
+    Automatically create ProcessoSeletivo for each candidatura.
+
+    Args:
+        sender: The model class (Candidatura)
+        instance: The actual instance being saved
+        created: Boolean indicating if this is a new instance
     """
     if created:
         ProcessoSeletivo.objects.get_or_create(
@@ -92,55 +129,14 @@ def criar_processo_seletivo(sender, instance, created, **kwargs):
         )
 
 
-@receiver(post_save, sender=VagaExtendida)
-def notificar_resultado_avaliacao_medica(sender, instance, **kwargs):
-    """
-    Notifica a empresa sobre mudanças no status da avaliação médica
-    """
-    # Verificar se o status médico mudou
-    if instance.pk:
-        try:
-            old_instance = VagaExtendida.objects.get(pk=instance.pk)
-            if hasattr(old_instance, '_state') and old_instance._state.db:
-                # Comparar com versão anterior do banco
-                old_status = VagaExtendida.objects.get(pk=instance.pk).status_medico
-                if old_status != instance.status_medico:
-                    _criar_notificacao_avaliacao_medica(instance)
-        except VagaExtendida.DoesNotExist:
-            # Primeiro save, criar notificação se não for pendente
-            if instance.status_medico != 'pendente':
-                _criar_notificacao_avaliacao_medica(instance)
-
-
-def _criar_notificacao_avaliacao_medica(vaga_ext):
-    """Helper para criar notificação de avaliação médica"""
-    if vaga_ext.status_medico == 'aprovada':
-        NotificacaoEmpresa.objects.create(
-            empresa=vaga_ext.vaga.empresa,
-            tipo='avaliacao_medica',
-            titulo='Vaga Aprovada!',
-            mensagem=f'Ótima notícia! Sua vaga "{vaga_ext.vaga.titulo}" foi aprovada pela equipe médica e já está recebendo candidaturas.',
-            vaga=vaga_ext.vaga
-        )
-    elif vaga_ext.status_medico == 'rejeitada':
-        mensagem = f'Sua vaga "{vaga_ext.vaga.titulo}" não foi aprovada pela equipe médica.'
-        if vaga_ext.observacoes_medicas:
-            mensagem += f' Motivo: {vaga_ext.observacoes_medicas}'
-        mensagem += ' Você pode editar a vaga e reenviar para avaliação.'
-        
-        NotificacaoEmpresa.objects.create(
-            empresa=vaga_ext.vaga.empresa,
-            tipo='avaliacao_medica',
-            titulo='Vaga Necessita Ajustes',
-            mensagem=mensagem,
-            vaga=vaga_ext.vaga
-        )
-
-
 @receiver(pre_save, sender=VagaExtendida)
 def armazenar_status_anterior(sender, instance, **kwargs):
     """
-    Armazena o status anterior para comparação no post_save
+    Store previous status for comparison in post_save.
+
+    Args:
+        sender: The model class (VagaExtendida)
+        instance: The actual instance being saved
     """
     if instance.pk:
         try:
@@ -155,15 +151,22 @@ def armazenar_status_anterior(sender, instance, **kwargs):
 @receiver(post_save, sender=VagaExtendida)
 def notificar_mudanca_status_medico(sender, instance, created, **kwargs):
     """
-    Notifica sobre mudanças no status médico (versão melhorada)
+    Notify about changes in medical status.
+
+    Args:
+        sender: The model class (VagaExtendida)
+        instance: The actual instance being saved
+        created: Boolean indicating if this is a new instance
     """
     if not created and hasattr(instance, '_old_status_medico'):
         old_status = instance._old_status_medico
         new_status = instance.status_medico
-        
+
         if old_status != new_status:
+            notificacao = None
+
             if new_status == 'aprovada':
-                NotificacaoEmpresa.objects.create(
+                notificacao = NotificacaoEmpresa.objects.create(
                     empresa=instance.vaga.empresa,
                     tipo='avaliacao_medica',
                     titulo='🎉 Vaga Aprovada!',
@@ -175,8 +178,8 @@ def notificar_mudanca_status_medico(sender, instance, created, **kwargs):
                 if instance.observacoes_medicas:
                     mensagem += f'\n\nObservações da equipe médica:\n{instance.observacoes_medicas}'
                 mensagem += '\n\nVocê pode editar a vaga e reenviar para avaliação.'
-                
-                NotificacaoEmpresa.objects.create(
+
+                notificacao = NotificacaoEmpresa.objects.create(
                     empresa=instance.vaga.empresa,
                     tipo='avaliacao_medica',
                     titulo='Vaga Necessita Ajustes',
@@ -184,15 +187,23 @@ def notificar_mudanca_status_medico(sender, instance, created, **kwargs):
                     vaga=instance.vaga
                 )
 
+            if notificacao:
+                # Send notification via WebSocket asynchronously
+                enviar_notificacao_empresa_websocket(instance.vaga.empresa.id, notificacao)
+
 
 @receiver(post_save, sender=ProcessoSeletivo)
 def atualizar_status_candidatura(sender, instance, **kwargs):
     """
-    Sincroniza o status do processo seletivo com a candidatura
+    Synchronize ProcessoSeletivo status with Candidatura.
+
+    Args:
+        sender: The model class (ProcessoSeletivo)
+        instance: The actual instance being saved
     """
     candidatura = instance.candidatura
-    
-    # Mapear status do processo para status da candidatura
+
+    # Map processo status to candidatura status
     status_map = {
         'novo': 'pendente',
         'visualizado': 'em_analise',
@@ -201,9 +212,9 @@ def atualizar_status_candidatura(sender, instance, **kwargs):
         'aprovado': 'aprovado',
         'rejeitado': 'rejeitado',
     }
-    
+
     novo_status = status_map.get(instance.status, candidatura.status)
-    
+
     if candidatura.status != novo_status:
         candidatura.status = novo_status
         candidatura.save()
@@ -212,7 +223,11 @@ def atualizar_status_candidatura(sender, instance, **kwargs):
 @receiver(post_delete, sender=Vaga)
 def limpar_vaga_extendida(sender, instance, **kwargs):
     """
-    Remove a VagaExtendida quando a Vaga é deletada (caso necessário)
+    Remove VagaExtendida when Vaga is deleted.
+
+    Args:
+        sender: The model class (Vaga)
+        instance: The actual instance being deleted
     """
     try:
         vaga_ext = VagaExtendida.objects.get(vaga=instance)
@@ -224,7 +239,11 @@ def limpar_vaga_extendida(sender, instance, **kwargs):
 @receiver(post_delete, sender=Empresa)
 def limpar_empresa_extendida(sender, instance, **kwargs):
     """
-    Remove a EmpresaExtendida quando a Empresa é deletada (caso necessário)
+    Remove EmpresaExtendida when Empresa is deleted.
+
+    Args:
+        sender: The model class (Empresa)
+        instance: The actual instance being deleted
     """
     try:
         empresa_ext = EmpresaExtendida.objects.get(empresa=instance)
@@ -233,50 +252,33 @@ def limpar_empresa_extendida(sender, instance, **kwargs):
         pass
 
 
-# Signal para limpar notificações antigas automaticamente
-def limpar_notificacoes_antigas_empresa():
-    """
-    Remove notificações mais antigas que 60 dias (pode ser chamado via cron job)
-    """
-    from django.utils import timezone
-    from datetime import timedelta
-    
-    data_limite = timezone.now() - timedelta(days=60)
-    notificacoes_antigas = NotificacaoEmpresa.objects.filter(
-        criada_em__lt=data_limite,
-        lida=True
-    )
-    
-    count = notificacoes_antigas.count()
-    notificacoes_antigas.delete()
-    
-    return f'{count} notificações antigas de empresas removidas'
-
-
-# Signal para atualizar estatísticas das empresas
 @receiver(post_save, sender=Vaga)
 def atualizar_estatisticas_empresa(sender, instance, **kwargs):
     """
-    Atualiza estatísticas da empresa quando vagas são criadas/modificadas
+    Update company statistics when jobs are created/modified.
+
+    Args:
+        sender: The model class (Vaga)
+        instance: The actual instance being saved
     """
     try:
         empresa_ext = EmpresaExtendida.objects.get(empresa=instance.empresa)
-        
-        # Contar vagas ativas
+
+        # Count active jobs
         vagas_ativas = Vaga.objects.filter(
             empresa=instance.empresa,
             status='ativa'
         ).count()
-        
-        # Contar total de candidatos
+
+        # Count total candidates
         total_candidatos = Candidatura.objects.filter(
             vaga__empresa=instance.empresa
         ).count()
-        
+
         empresa_ext.total_vagas_ativas = vagas_ativas
         empresa_ext.total_candidatos_recebidos = total_candidatos
         empresa_ext.save()
-        
+
     except EmpresaExtendida.DoesNotExist:
         pass
 
@@ -284,19 +286,71 @@ def atualizar_estatisticas_empresa(sender, instance, **kwargs):
 @receiver(post_delete, sender=Vaga)
 def atualizar_estatisticas_empresa_delete(sender, instance, **kwargs):
     """
-    Atualiza estatísticas da empresa quando vagas são deletadas
+    Update company statistics when jobs are deleted.
+
+    Args:
+        sender: The model class (Vaga)
+        instance: The actual instance being deleted
     """
     try:
         empresa_ext = EmpresaExtendida.objects.get(empresa=instance.empresa)
-        
-        # Recontar vagas ativas
+
+        # Recount active jobs
         vagas_ativas = Vaga.objects.filter(
             empresa=instance.empresa,
             status='ativa'
         ).count()
-        
+
         empresa_ext.total_vagas_ativas = vagas_ativas
         empresa_ext.save()
-        
+
     except EmpresaExtendida.DoesNotExist:
         pass
+
+
+# Helper functions
+
+def enviar_notificacao_empresa_websocket(empresa_id: int, notificacao: NotificacaoEmpresa):
+    """
+    Send notification to company via WebSocket asynchronously using Celery.
+
+    Args:
+        empresa_id: ID of the empresa to notify
+        notificacao: NotificacaoEmpresa instance to send
+    """
+    from .tasks import enviar_notificacao_empresa_websocket_task, atualizar_contador_notificacoes_empresa_task
+
+    notificacao_data = {
+        'id': notificacao.id,
+        'tipo': notificacao.tipo,
+        'titulo': notificacao.titulo,
+        'mensagem': notificacao.mensagem,
+        'lida': notificacao.lida,
+        'criada_em': notificacao.criada_em.isoformat(),
+    }
+
+    # Send notification via WebSocket
+    enviar_notificacao_empresa_websocket_task.delay(empresa_id, notificacao_data)
+
+    # Update unread count
+    atualizar_contador_notificacoes_empresa_task.delay(empresa_id)
+
+
+def limpar_notificacoes_antigas_empresa() -> str:
+    """
+    Remove old read notifications for companies (older than 60 days).
+    Can be called via cron job or management command.
+
+    Returns:
+        Message indicating how many notifications were removed
+    """
+    data_limite = timezone.now() - timedelta(days=60)
+    notificacoes_antigas = NotificacaoEmpresa.objects.filter(
+        criada_em__lt=data_limite,
+        lida=True
+    )
+
+    count = notificacoes_antigas.count()
+    notificacoes_antigas.delete()
+
+    return f'{count} notificações antigas de empresas removidas'

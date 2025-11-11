@@ -1,4 +1,5 @@
 {% extends "usercompany/base.html" %}
+{% load custom_filters %}
 {% block title %}Minhas Vagas - Portal PCD{% endblock %}
 
 {% block content %}
@@ -97,9 +98,7 @@
         </div>
         <div class="ml-4">
           <div class="text-2xl font-bold text-gray-900">
-            {% with vagas_ativas=page_obj.object_list|dictsort:"status" %}
-              {{ vagas_ativas|selectattr:"status"|selectattr:"ativa"|list|length }}
-            {% endwith %}
+            {{ page_obj.object_list|count_by_status:"ativa" }}
           </div>
           <div class="text-sm text-gray-600">Ativas</div>
         </div>

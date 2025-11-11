@@ -8,8 +8,12 @@ urlpatterns = [
     path('', landing, name='landing'),
     path('admin/', admin.site.urls, name='adminpage'),
     path('core/', include('core.urls')),
-    path('userpcd/', include('userpcd.urls')),  
+    path('userpcd/', include('userpcd.urls')),
     path('usercompany/', include('usercompany.urls')),
+
+    # API REST endpoints
+    path('api/pcd/', include('userpcd.urls_api')),
+    path('api/empresa/', include('usercompany.urls_api')),
 ]
 
 # Servir arquivos de mídia em desenvolvimento

@@ -47,3 +47,36 @@ venv.bak/
 # OS
 .DS_Store
 Thumbs.db
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+celery.log
+
+# Redis
+dump.rdb
+
+# Coverage
+.coverage
+htmlcov/
+coverage.xml
+*.cover
+
+# Testing
+.tox/
+.pytest_cache/
+
+# Logs
+*.log
+logs/
+
+# Static files
+/static/
+
+# Backup files
+*.bak
+*.backup
+
+# Secrets and credentials
+secrets.json
+credentials.json

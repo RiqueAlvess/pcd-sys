@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+
+{% block title %}Chat com {{ candidato.user.username }} - Portal PCD{% endblock %}
+
+{% block body %}
+<div class="min-h-screen gradient-bg">
+  <div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+      <div class="flex justify-between items-center">
+        <div class="flex items-center gap-4">
+          <a href="{% url 'lista_conversas_empresa' %}"
+             class="text-purple-600 hover:text-purple-800 transition">
+            ← Voltar
+          </a>
+          <div class="w-12 h-12 bg-purple-600 rounded-full flex items-center justify-center text-white font-bold text-xl">
+            {{ candidato.user.username|first|upper }}
+          </div>
+          <div>
+            <h1 class="text-2xl font-bold text-gray-900">{{ candidato.user.username }}</h1>
+            {% if candidato.nome_completo %}
+              <p class="text-gray-600">{{ candidato.nome_completo }}</p>
+            {% endif %}
+            {% if vaga %}
+              <p class="text-sm text-purple-600">Vaga: {{ vaga.titulo }}</p>
+            {% endif %}
+          </div>
+        </div>
+        {% if candidatura %}
+          <a href="{% url 'visualizar_curriculo' candidatura.id %}"
+             class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition">
+            Ver Currículo
+          </a>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Messages -->
+    {% if messages %}
+      <div class="mb-6">
+        {% for message in messages %}
+          <div class="bg-{{ message.tags }}-100 border border-{{ message.tags }}-400 text-{{ message.tags }}-700 px-4 py-3 rounded-lg mb-2">
+            {{ message }}
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <!-- Chat Container -->
+    <div class="bg-white rounded-lg shadow-md overflow-hidden" style="height: calc(100vh - 300px);">
+      <!-- Mensagens -->
+      <div id="chat-messages" class="p-6 space-y-4 overflow-y-auto" style="height: calc(100% - 100px);">
+        {% if mensagens %}
+          {% for msg in mensagens %}
+            <div class="flex {% if msg.remetente_empresa %}justify-end{% else %}justify-start{% endif %}">
+              <div class="max-w-lg">
+                <div class="{% if msg.remetente_empresa %}bg-purple-600 text-white{% else %}bg-gray-200 text-gray-900{% endif %} rounded-lg px-4 py-3 shadow">
+                  <p class="text-sm font-semibold mb-1">
+                    {% if msg.remetente_empresa %}Você{% else %}{{ candidato.user.username }}{% endif %}
+                  </p>
+                  <p class="whitespace-pre-wrap">{{ msg.conteudo }}</p>
+                </div>
+                <p class="text-xs text-gray-500 mt-1 {% if msg.remetente_empresa %}text-right{% endif %}">
+                  {{ msg.enviada_em|date:"d/m/Y H:i" }}
+                  {% if msg.remetente_empresa and msg.lida %}
+                    <span class="text-green-600">✓✓</span>
+                  {% endif %}
+                </p>
+              </div>
+            </div>
+          {% endfor %}
+        {% else %}
+          <div class="text-center text-gray-500 py-12">
+            <div class="text-6xl mb-4">💬</div>
+            <p>Nenhuma mensagem ainda. Inicie a conversa!</p>
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Formulário de envio -->
+      <div class="border-t border-gray-200 p-4 bg-gray-50">
+        <form method="POST" class="flex gap-3">
+          {% csrf_token %}
+          <textarea
+            name="mensagem"
+            rows="2"
+            placeholder="Digite sua mensagem..."
+            required
+            class="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-600 resize-none"
+          ></textarea>
+          <button
+            type="submit"
+            class="bg-purple-600 hover:bg-purple-700 text-white px-8 py-2 rounded-lg transition font-medium self-end">
+            Enviar
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Info adicional -->
+    <div class="mt-6 bg-white rounded-lg shadow-md p-6">
+      <h3 class="text-lg font-semibold text-gray-900 mb-3">Informações da Candidatura</h3>
+      <div class="grid grid-cols-2 gap-4 text-sm">
+        {% if candidatura %}
+          <div>
+            <p class="text-gray-600">Status:</p>
+            <p class="font-semibold text-gray-900">{{ candidatura.get_status_display }}</p>
+          </div>
+          <div>
+            <p class="text-gray-600">Data da candidatura:</p>
+            <p class="font-semibold text-gray-900">{{ candidatura.data_candidatura|date:"d/m/Y H:i" }}</p>
+          </div>
+        {% endif %}
+        {% if candidato.telefone %}
+          <div>
+            <p class="text-gray-600">Telefone:</p>
+            <p class="font-semibold text-gray-900">{{ candidato.telefone }}</p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Auto-scroll para a última mensagem
+  const chatMessages = document.getElementById('chat-messages');
+  if (chatMessages) {
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+
+  // Auto-refresh a cada 10 segundos
+  setInterval(() => {
+    location.reload();
+  }, 10000);
+</script>
+{% endblock %}

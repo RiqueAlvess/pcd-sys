@@ -77,9 +77,10 @@ def login_view(request):
                         user=user,
                         razao_social=f"Empresa de {user.username}",
                         telefone_principal="Não informado",
-                        cnpj="Não informado", 
+                        cnpj="Não informado",
                         cnae_principal="Não informado",
-                        tamanho="1-10"
+                        tamanho="1-10",
+                        site=None
                     )
                     messages.add_message(request, constants.WARNING,
                                       'Detectamos que seu perfil de empresa estava incompleto. Por favor, atualize suas informações.')

@@ -11,7 +11,7 @@ from django.utils import timezone
 import json
 
 from core.models import Empresa, CategoriaDeficiencia
-from userpcd.models import Vaga, Candidatura
+from userpcd.models import Vaga, Candidatura, Conversa, Mensagem
 from .models import EmpresaExtendida, VagaExtendida, ProcessoSeletivo, NotificacaoEmpresa
 
 
@@ -642,14 +642,14 @@ def notificacoes_dropdown_empresa(request):
         return JsonResponse({'error': 'Acesso negado'}, status=403)
 
     empresa = get_object_or_404(Empresa, user=request.user)
-    
+
     notificacoes = NotificacaoEmpresa.objects.filter(empresa=empresa)[:5]
-    
+
     nao_lidas = NotificacaoEmpresa.objects.filter(
         empresa=empresa,
         lida=False
     ).count()
-    
+
     data = {
         'notificacoes': [
             {
@@ -664,5 +664,96 @@ def notificacoes_dropdown_empresa(request):
         ],
         'nao_lidas': nao_lidas
     }
-    
+
     return JsonResponse(data)
+
+
+@login_required
+def lista_conversas_empresa(request):
+    """Lista de conversas da empresa com candidatos"""
+    if not request.user.is_empresa():
+        messages.error(request, 'Acesso negado.')
+        return redirect('landing')
+
+    empresa = get_object_or_404(Empresa, user=request.user)
+
+    # Buscar todas as conversas da empresa
+    conversas = Conversa.objects.filter(empresa=empresa).select_related(
+        'pcd__user', 'vaga', 'candidatura'
+    )
+
+    # Adicionar informações extras para cada conversa
+    for conversa in conversas:
+        conversa.ultima_msg = conversa.ultima_mensagem()
+        conversa.nao_lidas = conversa.mensagens_nao_lidas_empresa()
+
+    # Paginação
+    paginator = Paginator(conversas, 15)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        'page_obj': page_obj,
+        'total_conversas': conversas.count(),
+    }
+
+    return render(request, 'usercompany/lista_conversas_empresa.html', context)
+
+
+@login_required
+def sala_chat_empresa(request, conversa_id):
+    """Sala de chat entre empresa e candidato"""
+    if not request.user.is_empresa():
+        messages.error(request, 'Acesso negado.')
+        return redirect('landing')
+
+    empresa = get_object_or_404(Empresa, user=request.user)
+    conversa = get_object_or_404(
+        Conversa,
+        id=conversa_id,
+        empresa=empresa
+    )
+
+    if request.method == 'POST':
+        # Enviar nova mensagem
+        conteudo = request.POST.get('mensagem', '').strip()
+
+        if conteudo:
+            try:
+                mensagem = Mensagem.objects.create(
+                    conversa=conversa,
+                    remetente_empresa=True,
+                    conteudo=conteudo
+                )
+
+                # Atualizar timestamp da conversa
+                conversa.atualizada_em = timezone.now()
+                conversa.save()
+
+                messages.success(request, 'Mensagem enviada com sucesso!')
+                return redirect('sala_chat_empresa', conversa_id=conversa.id)
+
+            except Exception as e:
+                messages.error(request, f'Erro ao enviar mensagem: {str(e)}')
+        else:
+            messages.error(request, 'A mensagem não pode estar vazia.')
+
+    # Marcar mensagens não lidas como lidas
+    mensagens_nao_lidas = conversa.mensagens.filter(
+        remetente_empresa=False,
+        lida=False
+    )
+    mensagens_nao_lidas.update(lida=True)
+
+    # Buscar todas as mensagens da conversa
+    mensagens = conversa.mensagens.all()
+
+    context = {
+        'conversa': conversa,
+        'mensagens': mensagens,
+        'candidato': conversa.pcd,
+        'vaga': conversa.vaga,
+        'candidatura': conversa.candidatura,
+    }
+
+    return render(request, 'usercompany/sala_chat_empresa.html', context)

@@ -22,6 +22,6 @@ urlpatterns = [
     path('api/notificacoes/', views.notificacoes_dropdown, name='notificacoes_dropdown'),
 
     # Chat
-    path('chat/', views.lista_conversas, name='lista_conversas'),
-    path('chat/<int:conversa_id>/', views.sala_chat, name='sala_chat'),
+    path('chat/', views.lista_conversas_pcd, name='lista_conversas_pcd'),
+    path('chat/<int:conversa_id>/', views.sala_chat_pcd, name='sala_chat_pcd'),
 ]

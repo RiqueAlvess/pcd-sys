@@ -13,6 +13,7 @@ import json
 from core.models import Empresa, CategoriaDeficiencia
 from userpcd.models import Vaga, Candidatura, Conversa, Mensagem
 from .models import EmpresaExtendida, VagaExtendida, ProcessoSeletivo, NotificacaoEmpresa
+from core.models import PCDProfile
 
 
 def _get_or_create_empresa_extendida(empresa):
@@ -757,3 +758,33 @@ def sala_chat_empresa(request, conversa_id):
     }
 
     return render(request, 'usercompany/sala_chat_empresa.html', context)
+
+
+@login_required
+def iniciar_conversa(request, candidatura_id):
+    """Iniciar conversa com um candidato - apenas empresa pode iniciar"""
+    if not request.user.is_empresa():
+        messages.error(request, 'Acesso negado.')
+        return redirect('landing')
+
+    empresa = get_object_or_404(Empresa, user=request.user)
+    candidatura = get_object_or_404(
+        Candidatura,
+        id=candidatura_id,
+        vaga__empresa=empresa
+    )
+
+    # Obter ou criar conversa
+    conversa, created = Conversa.objects.get_or_create(
+        pcd=candidatura.pcd,
+        empresa=empresa,
+        vaga=candidatura.vaga,
+        defaults={'candidatura': candidatura}
+    )
+
+    if created:
+        messages.success(request, f'Conversa iniciada com {candidatura.pcd.user.username}!')
+    else:
+        messages.info(request, 'Retornando à conversa existente.')
+
+    return redirect('sala_chat_empresa', conversa_id=conversa.id)

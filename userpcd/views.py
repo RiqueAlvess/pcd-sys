@@ -10,8 +10,9 @@ from django.views.decorators.csrf import csrf_protect
 import mimetypes
 import os
 
-from core.models import PCDProfile, CategoriaDeficiencia
-from .models import Vaga, Candidatura, Documento, Notificacao, PerfilPCDExtendido
+from core.models import PCDProfile, CategoriaDeficiencia, Empresa
+from .models import Vaga, Candidatura, Documento, Notificacao, PerfilPCDExtendido, Conversa, Mensagem
+from django.utils import timezone
 
 
 def _get_or_create_perfil_extendido(pcd_profile):
@@ -384,7 +385,7 @@ def notificacoes_dropdown(request):
 
 
 @login_required
-def lista_conversas(request):
+def lista_conversas_pcd(request):
     """Lista de conversas do usuário PCD"""
     if not request.user.is_pcd():
         messages.error(request, 'Acesso negado.')
@@ -392,44 +393,83 @@ def lista_conversas(request):
 
     pcd_profile = get_object_or_404(PCDProfile, user=request.user)
 
-    from userpcd.models import Conversa
-    conversas = Conversa.objects.filter(pcd=pcd_profile).order_by('-atualizada_em')
+    # Buscar todas as conversas do PCD
+    conversas = Conversa.objects.filter(pcd=pcd_profile).select_related(
+        'empresa__user', 'vaga', 'candidatura'
+    ).order_by('-atualizada_em')
+
+    # Adicionar informações extras para cada conversa
+    for conversa in conversas:
+        conversa.ultima_msg = conversa.ultima_mensagem()
+        conversa.nao_lidas = conversa.mensagens_nao_lidas_pcd()
 
     # Paginação
-    paginator = Paginator(conversas, 20)
+    paginator = Paginator(conversas, 15)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
     context = {
         'page_obj': page_obj,
+        'total_conversas': conversas.count(),
     }
 
-    return render(request, 'usercore/lista_conversas.html', context)
+    return render(request, 'userpcd/lista_conversas_pcd.html', context)
 
 
 @login_required
-def sala_chat(request, conversa_id):
+def sala_chat_pcd(request, conversa_id):
     """Sala de chat entre PCD e Empresa"""
     if not request.user.is_pcd():
         messages.error(request, 'Acesso negado.')
         return redirect('landing')
 
     pcd_profile = get_object_or_404(PCDProfile, user=request.user)
+    conversa = get_object_or_404(
+        Conversa,
+        id=conversa_id,
+        pcd=pcd_profile
+    )
 
-    from userpcd.models import Conversa
-    conversa = get_object_or_404(Conversa, id=conversa_id, pcd=pcd_profile)
+    if request.method == 'POST':
+        # Enviar nova mensagem
+        conteudo = request.POST.get('mensagem', '').strip()
 
-    # Verificar se há candidatura aprovada
-    if conversa.candidatura and conversa.candidatura.status != 'aprovado':
-        messages.error(request, 'Chat disponível apenas para candidaturas aprovadas.')
-        return redirect('minhas_candidaturas')
+        if conteudo:
+            try:
+                mensagem = Mensagem.objects.create(
+                    conversa=conversa,
+                    remetente_empresa=False,
+                    conteudo=conteudo
+                )
 
-    # Gerar room_name para WebSocket
-    room_name = f"pcd_{conversa.pcd.id}_empresa_{conversa.empresa.id}_vaga_{conversa.vaga.id}"
+                # Atualizar timestamp da conversa
+                conversa.atualizada_em = timezone.now()
+                conversa.save()
+
+                messages.success(request, 'Mensagem enviada com sucesso!')
+                return redirect('sala_chat_pcd', conversa_id=conversa.id)
+
+            except Exception as e:
+                messages.error(request, f'Erro ao enviar mensagem: {str(e)}')
+        else:
+            messages.error(request, 'A mensagem não pode estar vazia.')
+
+    # Marcar mensagens não lidas como lidas
+    mensagens_nao_lidas = conversa.mensagens.filter(
+        remetente_empresa=True,
+        lida=False
+    )
+    mensagens_nao_lidas.update(lida=True)
+
+    # Buscar todas as mensagens da conversa
+    mensagens = conversa.mensagens.all()
 
     context = {
         'conversa': conversa,
-        'room_name': room_name,
+        'mensagens': mensagens,
+        'empresa': conversa.empresa,
+        'vaga': conversa.vaga,
+        'candidatura': conversa.candidatura,
     }
 
-    return render(request, 'usercore/sala_chat.html', context)
+    return render(request, 'userpcd/sala_chat_pcd.html', context)

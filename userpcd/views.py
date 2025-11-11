@@ -359,12 +359,12 @@ def notificacoes_dropdown(request):
     notificacoes = Notificacao.objects.filter(
         user=request.user
     )[:5]
-    
+
     nao_lidas = Notificacao.objects.filter(
         user=request.user,
         lida=False
     ).count()
-    
+
     data = {
         'notificacoes': [
             {
@@ -379,5 +379,57 @@ def notificacoes_dropdown(request):
         ],
         'nao_lidas': nao_lidas
     }
-    
+
     return JsonResponse(data)
+
+
+@login_required
+def lista_conversas(request):
+    """Lista de conversas do usuário PCD"""
+    if not request.user.is_pcd():
+        messages.error(request, 'Acesso negado.')
+        return redirect('landing')
+
+    pcd_profile = get_object_or_404(PCDProfile, user=request.user)
+
+    from userpcd.models import Conversa
+    conversas = Conversa.objects.filter(pcd=pcd_profile).order_by('-atualizada_em')
+
+    # Paginação
+    paginator = Paginator(conversas, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        'page_obj': page_obj,
+    }
+
+    return render(request, 'usercore/lista_conversas.html', context)
+
+
+@login_required
+def sala_chat(request, conversa_id):
+    """Sala de chat entre PCD e Empresa"""
+    if not request.user.is_pcd():
+        messages.error(request, 'Acesso negado.')
+        return redirect('landing')
+
+    pcd_profile = get_object_or_404(PCDProfile, user=request.user)
+
+    from userpcd.models import Conversa
+    conversa = get_object_or_404(Conversa, id=conversa_id, pcd=pcd_profile)
+
+    # Verificar se há candidatura aprovada
+    if conversa.candidatura and conversa.candidatura.status != 'aprovado':
+        messages.error(request, 'Chat disponível apenas para candidaturas aprovadas.')
+        return redirect('minhas_candidaturas')
+
+    # Gerar room_name para WebSocket
+    room_name = f"pcd_{conversa.pcd.id}_empresa_{conversa.empresa.id}_vaga_{conversa.vaga.id}"
+
+    context = {
+        'conversa': conversa,
+        'room_name': room_name,
+    }
+
+    return render(request, 'usercore/sala_chat.html', context)

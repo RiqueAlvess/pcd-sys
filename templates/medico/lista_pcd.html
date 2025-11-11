@@ -39,7 +39,6 @@
 
   <!-- Lista de PCDs -->
   <div class="bg-white rounded-lg shadow-md overflow-hidden">
-    {% if pcds %}
     <div class="overflow-x-auto">
       <table class="min-w-full divide-y divide-gray-200">
         <thead class="bg-gray-50">
@@ -74,20 +73,18 @@
               {{ pcd.criado_em|date:"d/m/Y" }}
             </td>
             <td class="px-6 py-4 whitespace-nowrap">
-              {% with ultima=pcd.classificacoes.first %}
-              {% if ultima %}
-              <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full badge-{{ ultima.status }}">
-                {{ ultima.get_status_display }}
+              {% if pcd.ultima_classificacao %}
+              <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full badge-{{ pcd.ultima_classificacao.status }}">
+                {{ pcd.ultima_classificacao.get_status_display }}
               </span>
               <div class="text-xs text-gray-500 mt-1">
-                {{ ultima.criado_em|date:"d/m/Y" }}
+                {{ pcd.ultima_classificacao.criado_em|date:"d/m/Y" }}
               </div>
               {% else %}
               <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full badge-pendente">
                 Pendente
               </span>
               {% endif %}
-              {% endwith %}
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm">
               <a href="{% url 'avaliar_pcd' pcd.id %}" class="text-blue-600 hover:text-blue-800 font-medium">
@@ -95,19 +92,20 @@
               </a>
             </td>
           </tr>
+          {% empty %}
+          <tr>
+            <td colspan="5" class="text-center py-12">
+              <div class="text-4xl mb-4">📋</div>
+              <p class="text-gray-500 text-lg">Nenhum PCD encontrado com os filtros aplicados.</p>
+              <a href="{% url 'lista_pcd_pendentes' %}" class="text-blue-600 hover:underline mt-2 inline-block">
+                Limpar filtros
+              </a>
+            </td>
+          </tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
-    {% else %}
-    <div class="text-center py-12">
-      <div class="text-4xl mb-4">📋</div>
-      <p class="text-gray-500 text-lg">Nenhum PCD encontrado com os filtros aplicados.</p>
-      <a href="{% url 'lista_pcd_pendentes' %}" class="text-blue-600 hover:underline mt-2 inline-block">
-        Limpar filtros
-      </a>
-    </div>
-    {% endif %}
   </div>
 </div>
 {% endblock %}

@@ -75,13 +75,19 @@ def lista_pcd_pendentes(request):
     busca = request.GET.get('busca', '')
 
     # Query base: PCDs com perfil estendido
+    # Usar Prefetch para ordenar classificações e pegar apenas a última
+    ultima_classificacao_prefetch = Prefetch(
+        'classificacoes',
+        queryset=ClassificacaoPCD.objects.select_related('medico').order_by('-criado_em'),
+        to_attr='classificacoes_ordenadas'
+    )
+
     pcds = PCDProfile.objects.select_related(
         'user',
         'perfilpcdextendido'
     ).prefetch_related(
         'deficiencias',
-        'classificacoes',
-        'classificacoes__medico'
+        ultima_classificacao_prefetch
     )
 
     # Filtro de status
@@ -102,8 +108,13 @@ def lista_pcd_pendentes(request):
 
     pcds = pcds.order_by('-criado_em')
 
+    # Adicionar ultima_classificacao a cada PCD para uso no template
+    pcds_list = list(pcds)
+    for pcd in pcds_list:
+        pcd.ultima_classificacao = pcd.classificacoes_ordenadas[0] if pcd.classificacoes_ordenadas else None
+
     context = {
-        'pcds': pcds,
+        'pcds': pcds_list,
         'status_filter': status_filter,
         'busca': busca,
     }

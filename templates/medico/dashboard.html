@@ -1,0 +1,134 @@
+{% extends 'medico/base.html' %}
+
+{% block title %}Dashboard Médico - Portal PCD{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+  <h1 class="text-3xl font-bold text-gray-800 mb-8">Dashboard Médico</h1>
+
+  <!-- Cards de Estatísticas -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <!-- PCDs Pendentes -->
+    <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-yellow-500">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-gray-600 text-sm font-medium">PCDs Pendentes</p>
+          <p class="text-3xl font-bold text-gray-800 mt-2">{{ pcds_pendentes }}</p>
+        </div>
+        <div class="text-4xl">👤</div>
+      </div>
+      <a href="{% url 'lista_pcd_pendentes' %}?status=pendente" class="text-yellow-600 text-sm mt-4 inline-block hover:underline">
+        Ver lista →
+      </a>
+    </div>
+
+    <!-- Vagas Pendentes -->
+    <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-blue-500">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-gray-600 text-sm font-medium">Vagas Pendentes</p>
+          <p class="text-3xl font-bold text-gray-800 mt-2">{{ vagas_pendentes }}</p>
+        </div>
+        <div class="text-4xl">💼</div>
+      </div>
+      <a href="{% url 'vagas_pendentes' %}?status=pendente" class="text-blue-600 text-sm mt-4 inline-block hover:underline">
+        Ver lista →
+      </a>
+    </div>
+
+    <!-- Classificações Realizadas -->
+    <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-green-500">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-gray-600 text-sm font-medium">Classificações Realizadas</p>
+          <p class="text-3xl font-bold text-gray-800 mt-2">{{ classificacoes_realizadas }}</p>
+        </div>
+        <div class="text-4xl">✅</div>
+      </div>
+      <a href="{% url 'historico_classificacoes' %}" class="text-green-600 text-sm mt-4 inline-block hover:underline">
+        Ver histórico →
+      </a>
+    </div>
+
+    <!-- Vagas Avaliadas -->
+    <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-purple-500">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-gray-600 text-sm font-medium">Vagas Avaliadas</p>
+          <p class="text-3xl font-bold text-gray-800 mt-2">{{ vagas_avaliadas }}</p>
+        </div>
+        <div class="text-4xl">🏢</div>
+      </div>
+      <a href="{% url 'vagas_pendentes' %}?status=aprovada" class="text-purple-600 text-sm mt-4 inline-block hover:underline">
+        Ver lista →
+      </a>
+    </div>
+  </div>
+
+  <!-- Atividades Recentes -->
+  <div class="bg-white rounded-lg shadow-md p-6">
+    <h2 class="text-xl font-bold text-gray-800 mb-4">Atividades Recentes</h2>
+
+    {% if atividades_recentes %}
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">PCD</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Observação</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          {% for classificacao in atividades_recentes %}
+          <tr class="hover:bg-gray-50">
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+              {{ classificacao.criado_em|date:"d/m/Y H:i" }}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm font-medium text-gray-900">{{ classificacao.pcd.nome_completo }}</div>
+              <div class="text-sm text-gray-500">{{ classificacao.pcd.cpf }}</div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full badge-{{ classificacao.status }}">
+                {{ classificacao.get_status_display }}
+              </span>
+            </td>
+            <td class="px-6 py-4 text-sm text-gray-500">
+              {{ classificacao.observacao|truncatewords:10 }}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="text-gray-500 text-center py-8">Nenhuma atividade recente.</p>
+    {% endif %}
+  </div>
+
+  <!-- Ações Rápidas -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+    <a href="{% url 'lista_pcd_pendentes' %}" class="block bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg shadow-md p-6 hover:shadow-lg transition">
+      <div class="flex items-center justify-between">
+        <div>
+          <h3 class="text-lg font-bold">Avaliar PCDs</h3>
+          <p class="text-blue-100 text-sm mt-1">Classificar perfis de pessoas com deficiência</p>
+        </div>
+        <div class="text-3xl">👤</div>
+      </div>
+    </a>
+
+    <a href="{% url 'vagas_pendentes' %}" class="block bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg shadow-md p-6 hover:shadow-lg transition">
+      <div class="flex items-center justify-between">
+        <div>
+          <h3 class="text-lg font-bold">Avaliar Vagas</h3>
+          <p class="text-purple-100 text-sm mt-1">Definir deficiências elegíveis para vagas</p>
+        </div>
+        <div class="text-3xl">💼</div>
+      </div>
+    </a>
+  </div>
+</div>
+{% endblock %}

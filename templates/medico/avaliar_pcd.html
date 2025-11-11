@@ -1,0 +1,187 @@
+{% extends 'medico/base.html' %}
+
+{% block title %}Avaliar PCD - {{ pcd.nome_completo }}{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto">
+  <div class="mb-6">
+    <a href="{% url 'lista_pcd_pendentes' %}" class="text-blue-600 hover:underline">
+      ← Voltar para lista
+    </a>
+  </div>
+
+  <h1 class="text-3xl font-bold text-gray-800 mb-6">Avaliar PCD</h1>
+
+  <!-- Informações do PCD -->
+  <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+    <h2 class="text-xl font-bold text-gray-800 mb-4">Informações do PCD</h2>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <p class="text-sm text-gray-600">Nome Completo</p>
+        <p class="font-medium">{{ pcd.nome_completo }}</p>
+      </div>
+
+      <div>
+        <p class="text-sm text-gray-600">CPF</p>
+        <p class="font-medium">{{ pcd.cpf }}</p>
+      </div>
+
+      <div>
+        <p class="text-sm text-gray-600">Email</p>
+        <p class="font-medium">{{ pcd.user.email }}</p>
+      </div>
+
+      <div>
+        <p class="text-sm text-gray-600">Data de Nascimento</p>
+        <p class="font-medium">{{ pcd.data_nascimento|date:"d/m/Y" }}</p>
+      </div>
+
+      <div>
+        <p class="text-sm text-gray-600">Telefone</p>
+        <p class="font-medium">{{ pcd.telefone }}</p>
+      </div>
+
+      <div>
+        <p class="text-sm text-gray-600">Cadastro</p>
+        <p class="font-medium">{{ pcd.criado_em|date:"d/m/Y H:i" }}</p>
+      </div>
+    </div>
+
+    <div class="mt-4">
+      <p class="text-sm text-gray-600">Deficiências Declaradas</p>
+      <div class="flex flex-wrap gap-2 mt-2">
+        {% for deficiencia in pcd.deficiencias.all %}
+        <span class="px-3 py-1 bg-purple-100 text-purple-800 rounded-full">
+          {{ deficiencia.nome }}
+        </span>
+        {% empty %}
+        <span class="text-gray-400">Não informado</span>
+        {% endfor %}
+      </div>
+    </div>
+
+    {% if pcd.formacao_academica %}
+    <div class="mt-4">
+      <p class="text-sm text-gray-600">Formação Acadêmica</p>
+      <p class="text-gray-800">{{ pcd.formacao_academica }}</p>
+    </div>
+    {% endif %}
+
+    {% if pcd.experiencia_profissional %}
+    <div class="mt-4">
+      <p class="text-sm text-gray-600">Experiência Profissional</p>
+      <p class="text-gray-800">{{ pcd.experiencia_profissional }}</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Documentos -->
+  <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+    <h2 class="text-xl font-bold text-gray-800 mb-4">Documentos</h2>
+
+    {% if documentos %}
+    <div class="space-y-3">
+      {% for doc in documentos %}
+      <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
+        <div>
+          <p class="font-medium">{{ doc.nome_original }}</p>
+          <p class="text-sm text-gray-500">
+            Tipo: {{ doc.get_tipo_display }} |
+            Upload: {{ doc.data_upload|date:"d/m/Y H:i" }}
+          </p>
+          {% if doc.cid_10 %}
+          <p class="text-sm text-gray-600">CID-10: {{ doc.cid_10 }}</p>
+          {% endif %}
+        </div>
+        <a href="{{ doc.arquivo.url }}" target="_blank" class="text-blue-600 hover:underline">
+          Ver documento →
+        </a>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-gray-500 text-center py-4">Nenhum documento enviado.</p>
+    {% endif %}
+  </div>
+
+  <!-- Última Classificação (se houver) -->
+  {% if ultima_classificacao %}
+  <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mb-6">
+    <h2 class="text-lg font-bold text-yellow-900 mb-3">Última Classificação</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <p class="text-sm text-yellow-700">Status</p>
+        <p class="font-medium text-yellow-900">{{ ultima_classificacao.get_status_display }}</p>
+      </div>
+      <div>
+        <p class="text-sm text-yellow-700">Data</p>
+        <p class="font-medium text-yellow-900">{{ ultima_classificacao.criado_em|date:"d/m/Y H:i" }}</p>
+      </div>
+      <div>
+        <p class="text-sm text-yellow-700">Médico</p>
+        <p class="font-medium text-yellow-900">{{ ultima_classificacao.medico.username }}</p>
+      </div>
+    </div>
+    {% if ultima_classificacao.observacao %}
+    <div class="mt-3">
+      <p class="text-sm text-yellow-700">Observação</p>
+      <p class="text-yellow-900">{{ ultima_classificacao.observacao }}</p>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <!-- Formulário de Avaliação -->
+  <div class="bg-white rounded-lg shadow-md p-6">
+    <h2 class="text-xl font-bold text-gray-800 mb-4">Nova Classificação</h2>
+
+    <form method="post" class="space-y-6">
+      {% csrf_token %}
+
+      <!-- Status -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">
+          Status da Classificação <span class="text-red-500">*</span>
+        </label>
+        <select name="status" required class="w-full border border-gray-300 rounded-md px-4 py-2 focus:ring-2 focus:ring-blue-500">
+          <option value="">Selecione...</option>
+          {% for value, label in status_choices %}
+          <option value="{{ value }}">{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Observações -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">
+          Observações <span class="text-red-500">*</span>
+        </label>
+        <textarea name="observacao" rows="6" required
+                  placeholder="Descreva a análise realizada, justificativa da classificação, recomendações, etc."
+                  class="w-full border border-gray-300 rounded-md px-4 py-2 focus:ring-2 focus:ring-blue-500"></textarea>
+      </div>
+
+      <!-- Documentos Analisados -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">
+          Documentos Analisados
+        </label>
+        <textarea name="documentos_analisados" rows="3"
+                  placeholder="Liste os documentos que foram analisados (opcional)"
+                  class="w-full border border-gray-300 rounded-md px-4 py-2 focus:ring-2 focus:ring-blue-500"></textarea>
+      </div>
+
+      <!-- Botões -->
+      <div class="flex space-x-4">
+        <button type="submit" class="flex-1 bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 font-medium">
+          Salvar Classificação
+        </button>
+        <a href="{% url 'lista_pcd_pendentes' %}" class="flex-1 bg-gray-200 text-gray-700 px-6 py-3 rounded-md hover:bg-gray-300 text-center font-medium">
+          Cancelar
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,98 @@
+{% extends 'medico/base.html' %}
+
+{% block title %}Histórico de Classificações - Painel Médico{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-3xl font-bold text-gray-800">Histórico de Classificações</h1>
+  </div>
+
+  <!-- Filtros -->
+  <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+    <form method="get" class="flex items-end space-x-4">
+      <div class="flex-1">
+        <label class="block text-sm font-medium text-gray-700 mb-2">Filtrar por Status</label>
+        <select name="status" class="w-full border border-gray-300 rounded-md px-4 py-2 focus:ring-2 focus:ring-blue-500">
+          <option value="">Todos</option>
+          {% for value, label in status_choices %}
+          <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700">
+        Filtrar
+      </button>
+      <a href="{% url 'historico_classificacoes' %}" class="bg-gray-200 text-gray-700 px-6 py-2 rounded-md hover:bg-gray-300">
+        Limpar
+      </a>
+    </form>
+  </div>
+
+  <!-- Lista de Classificações -->
+  <div class="bg-white rounded-lg shadow-md overflow-hidden">
+    {% if classificacoes %}
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">PCD</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Observação</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Documentos</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          {% for classificacao in classificacoes %}
+          <tr class="hover:bg-gray-50">
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm text-gray-900">{{ classificacao.criado_em|date:"d/m/Y" }}</div>
+              <div class="text-sm text-gray-500">{{ classificacao.criado_em|date:"H:i" }}</div>
+            </td>
+            <td class="px-6 py-4">
+              <div class="text-sm font-medium text-gray-900">{{ classificacao.pcd.nome_completo }}</div>
+              <div class="text-sm text-gray-500">{{ classificacao.pcd.cpf }}</div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full badge-{{ classificacao.status }}">
+                {{ classificacao.get_status_display }}
+              </span>
+            </td>
+            <td class="px-6 py-4">
+              <p class="text-sm text-gray-700 line-clamp-2">{{ classificacao.observacao }}</p>
+            </td>
+            <td class="px-6 py-4">
+              {% if classificacao.documentos_analisados %}
+              <p class="text-sm text-gray-700 line-clamp-2">{{ classificacao.documentos_analisados }}</p>
+              {% else %}
+              <span class="text-gray-400 text-sm">-</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Estatísticas -->
+    <div class="bg-gray-50 px-6 py-4 border-t border-gray-200">
+      <p class="text-sm text-gray-600">
+        Total de classificações: <span class="font-bold">{{ classificacoes.count }}</span>
+      </p>
+    </div>
+    {% else %}
+    <div class="text-center py-12">
+      <div class="text-4xl mb-4">📋</div>
+      <p class="text-gray-500 text-lg">Nenhuma classificação encontrada.</p>
+      {% if status_filter %}
+      <a href="{% url 'historico_classificacoes' %}" class="text-blue-600 hover:underline mt-2 inline-block">
+        Limpar filtros
+      </a>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

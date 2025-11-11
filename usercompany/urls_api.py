@@ -8,7 +8,7 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .api_views import (
     NotificacaoEmpresaViewSet, CandidaturaEmpresaViewSet,
-    ProcessoSeletivoViewSet, VagaExtendidaViewSet
+    ProcessoSeletivoViewSet, VagaExtendidaViewSet, ConversaEmpresaViewSet
 )
 
 # Create router and register viewsets
@@ -17,6 +17,7 @@ router.register(r'notificacoes', NotificacaoEmpresaViewSet, basename='notificaca
 router.register(r'candidaturas', CandidaturaEmpresaViewSet, basename='candidatura-empresa')
 router.register(r'processos-seletivos', ProcessoSeletivoViewSet, basename='processo-seletivo')
 router.register(r'vagas-extendidas', VagaExtendidaViewSet, basename='vaga-extendida')
+router.register(r'conversas', ConversaEmpresaViewSet, basename='conversa-empresa')
 
 app_name = 'usercompany_api'
 

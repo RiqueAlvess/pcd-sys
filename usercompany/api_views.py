@@ -15,12 +15,13 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 
 from core.models import Empresa
-from userpcd.models import Candidatura, Vaga
+from userpcd.models import Candidatura, Vaga, Conversa, Mensagem
 from .models import NotificacaoEmpresa, ProcessoSeletivo, VagaExtendida
 from .serializers import (
     NotificacaoEmpresaSerializer, ProcessoSeletivoSerializer,
     CandidatoDetalheSerializer, VagaExtendidaSerializer
 )
+from userpcd.serializers import ConversaSerializer, MensagemSerializer
 
 
 class NotificacaoEmpresaViewSet(viewsets.ModelViewSet):
@@ -352,3 +353,78 @@ class VagaExtendidaViewSet(viewsets.ModelViewSet):
         }
 
         return Response(stats)
+
+
+class ConversaEmpresaViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint for chat conversations (company view).
+
+    Provides:
+    - list: Get all conversations for current company
+    - retrieve: Get specific conversation with messages
+    - send_message: Send message in conversation
+    """
+
+    serializer_class = ConversaSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        """Filter conversations by current company."""
+        user = self.request.user
+        if user.is_empresa():
+            empresa = get_object_or_404(Empresa, user=user)
+            return Conversa.objects.filter(empresa=empresa).order_by('-atualizada_em')
+        return Conversa.objects.none()
+
+    def retrieve(self, request, *args, **kwargs):
+        """
+        Get conversation with messages.
+
+        GET /api/empresa/conversas/{id}/
+        """
+        conversa = self.get_object()
+        mensagens = conversa.mensagens.all().order_by('enviada_em')
+
+        # Mark messages as read
+        if request.user.is_empresa():
+            mensagens.filter(remetente_empresa=False, lida=False).update(lida=True)
+
+        return Response({
+            'conversa': self.get_serializer(conversa).data,
+            'mensagens': MensagemSerializer(mensagens, many=True).data
+        })
+
+    @action(detail=True, methods=['post'])
+    def send_message(self, request, pk=None):
+        """
+        Send message in conversation.
+
+        POST /api/empresa/conversas/{id}/send_message/
+        Body: {"conteudo": "message text"}
+        """
+        conversa = self.get_object()
+        conteudo = request.data.get('conteudo', '').strip()
+
+        if not conteudo:
+            return Response({
+                'status': 'error',
+                'message': 'Conteúdo da mensagem não pode estar vazio'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Create message
+        mensagem = Mensagem.objects.create(
+            conversa=conversa,
+            remetente_empresa=True,  # Empresa is sending
+            conteudo=conteudo,
+            lida=False
+        )
+
+        # Update conversation timestamp
+        conversa.atualizada_em = timezone.now()
+        conversa.save()
+
+        return Response({
+            'status': 'success',
+            'message': 'Mensagem enviada',
+            'data': MensagemSerializer(mensagem).data
+        }, status=status.HTTP_201_CREATED)

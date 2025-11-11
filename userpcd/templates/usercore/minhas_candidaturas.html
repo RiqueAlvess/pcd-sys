@@ -1,4 +1,5 @@
 {% extends "usercore/base.html" %}
+{% load custom_filters %}
 {% block title %}Minhas Candidaturas - Portal PCD{% endblock %}
 
 {% block content %}
@@ -31,28 +32,28 @@
       
       <div class="bg-white rounded-lg p-4 border border-gray-200">
         <div class="text-2xl font-bold text-yellow-600">
-          {{ candidaturas|selectattr:"status"|selectattr:"pendente"|list|length }}
+          {{ candidaturas|count_by_status:"pendente" }}
         </div>
         <div class="text-sm text-gray-600">Pendentes</div>
       </div>
-      
+
       <div class="bg-white rounded-lg p-4 border border-gray-200">
         <div class="text-2xl font-bold text-blue-600">
-          {{ candidaturas|selectattr:"status"|selectattr:"em_analise"|list|length }}
+          {{ candidaturas|count_by_status:"em_analise" }}
         </div>
         <div class="text-sm text-gray-600">Em Análise</div>
       </div>
-      
+
       <div class="bg-white rounded-lg p-4 border border-gray-200">
         <div class="text-2xl font-bold text-purple-600">
-          {{ candidaturas|selectattr:"status"|selectattr:"entrevista"|list|length }}
+          {{ candidaturas|count_by_status:"entrevista" }}
         </div>
         <div class="text-sm text-gray-600">Entrevistas</div>
       </div>
-      
+
       <div class="bg-white rounded-lg p-4 border border-gray-200">
         <div class="text-2xl font-bold text-green-600">
-          {{ candidaturas|selectattr:"status"|selectattr:"aprovado"|list|length }}
+          {{ candidaturas|count_by_status:"aprovado" }}
         </div>
         <div class="text-sm text-gray-600">Aprovadas</div>
       </div>

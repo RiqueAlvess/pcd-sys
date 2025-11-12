@@ -18,4 +18,9 @@ urlpatterns = [
 
     # Histórico
     path('historico/', views_medico.historico_classificacoes, name='historico_classificacoes'),
+
+    # Chat com Candidatos
+    path('conversas/', views_medico.lista_conversas_medico, name='lista_conversas_medico'),
+    path('chat/<int:conversa_id>/', views_medico.sala_chat_medico, name='sala_chat_medico'),
+    path('iniciar-conversa/<int:pcd_id>/', views_medico.iniciar_conversa_medico, name='iniciar_conversa_medico'),
 ]

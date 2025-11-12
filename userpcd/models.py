@@ -242,3 +242,74 @@ class Mensagem(models.Model):
         if self.arquivo and os.path.isfile(self.arquivo.path):
             os.remove(self.arquivo.path)
         super().delete(*args, **kwargs)
+
+
+class ConversaMedico(models.Model):
+    """Conversa entre Médico e PCD"""
+    pcd = models.ForeignKey(PCDProfile, on_delete=models.CASCADE, related_name='conversas_medico')
+    medico = models.ForeignKey(User, on_delete=models.CASCADE, related_name='conversas_medico_realizadas', limit_choices_to={'role': 'medico'})
+    criada_em = models.DateTimeField(auto_now_add=True)
+    atualizada_em = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-atualizada_em']
+        unique_together = ['pcd', 'medico']
+
+    def __str__(self):
+        return f"Conversa Médica: {self.medico.username} - {self.pcd.user.username}"
+
+    def mensagens_nao_lidas_pcd(self):
+        """Retorna número de mensagens não lidas pelo PCD"""
+        return self.mensagens_medico.filter(remetente_medico=True, lida=False).count()
+
+    def mensagens_nao_lidas_medico(self):
+        """Retorna número de mensagens não lidas pelo médico"""
+        return self.mensagens_medico.filter(remetente_medico=False, lida=False).count()
+
+    def ultima_mensagem(self):
+        """Retorna a última mensagem da conversa"""
+        return self.mensagens_medico.order_by('-enviada_em').first()
+
+
+class MensagemMedico(models.Model):
+    """Mensagem trocada entre Médico e PCD"""
+    conversa = models.ForeignKey(ConversaMedico, on_delete=models.CASCADE, related_name='mensagens_medico')
+    remetente_medico = models.BooleanField(default=False, help_text="True se remetente é médico, False se é PCD")
+    conteudo = models.TextField(blank=True)
+    arquivo = models.FileField(upload_to='chat/medico/arquivos/', blank=True, null=True, help_text="Arquivo anexado (PDF, imagem, etc)")
+    lida = models.BooleanField(default=False)
+    enviada_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['enviada_em']
+
+    def __str__(self):
+        remetente = "Médico" if self.remetente_medico else "PCD"
+        if self.arquivo:
+            return f"{remetente}: [Arquivo: {self.arquivo.name}]"
+        return f"{remetente}: {self.conteudo[:50]}..."
+
+    def marcar_como_lida(self):
+        """Marca a mensagem como lida"""
+        if not self.lida:
+            self.lida = True
+            self.save()
+
+    def get_nome_arquivo(self):
+        """Retorna apenas o nome do arquivo sem o caminho"""
+        if self.arquivo:
+            return os.path.basename(self.arquivo.name)
+        return None
+
+    def is_imagem(self):
+        """Verifica se o arquivo é uma imagem"""
+        if self.arquivo:
+            extensoes_imagem = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp']
+            return any(self.arquivo.name.lower().endswith(ext) for ext in extensoes_imagem)
+        return False
+
+    def delete(self, *args, **kwargs):
+        """Remove arquivo do disco ao deletar mensagem"""
+        if self.arquivo and os.path.isfile(self.arquivo.path):
+            os.remove(self.arquivo.path)
+        super().delete(*args, **kwargs)

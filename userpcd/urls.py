@@ -21,7 +21,11 @@ urlpatterns = [
     path('notificacoes/', views.notificacoes, name='notificacoes'),
     path('api/notificacoes/', views.notificacoes_dropdown, name='notificacoes_dropdown'),
 
-    # Chat
+    # Chat com Empresas
     path('chat/', views.lista_conversas_pcd, name='lista_conversas_pcd'),
     path('chat/<int:conversa_id>/', views.sala_chat_pcd, name='sala_chat_pcd'),
+
+    # Chat com Médicos
+    path('chat-medico/', views.lista_conversas_medico_pcd, name='lista_conversas_medico_pcd'),
+    path('chat-medico/<int:conversa_id>/', views.sala_chat_medico_pcd, name='sala_chat_medico_pcd'),
 ]

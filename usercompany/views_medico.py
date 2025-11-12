@@ -8,8 +8,9 @@ from django.db.models import Q, Prefetch
 from django.utils import timezone
 
 from core.models import PCDProfile, ClassificacaoPCD, User
-from userpcd.models import Vaga, Notificacao, Documento, PerfilPCDExtendido
+from userpcd.models import Vaga, Notificacao, Documento, PerfilPCDExtendido, ConversaMedico, MensagemMedico
 from usercompany.models import VagaExtendida, NotificacaoEmpresa
+from django.core.paginator import Paginator
 
 
 def medico_required(view_func):
@@ -313,3 +314,138 @@ def historico_classificacoes(request):
     }
 
     return render(request, 'medico/historico_classificacoes.html', context)
+
+
+@login_required
+@medico_required
+def lista_conversas_medico(request):
+    """Lista de conversas do médico com candidatos (PCDs)"""
+
+    # Buscar todas as conversas do médico
+    conversas = ConversaMedico.objects.filter(medico=request.user).select_related(
+        'pcd__user', 'pcd__perfil_extendido'
+    ).prefetch_related(
+        'pcd__deficiencias'
+    )
+
+    # Adicionar informações extras para cada conversa
+    for conversa in conversas:
+        conversa.ultima_msg = conversa.ultima_mensagem()
+        conversa.nao_lidas = conversa.mensagens_nao_lidas_medico()
+
+    # Paginação
+    paginator = Paginator(conversas, 15)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        'page_obj': page_obj,
+        'total_conversas': conversas.count(),
+    }
+
+    return render(request, 'medico/lista_conversas.html', context)
+
+
+@login_required
+@medico_required
+def sala_chat_medico(request, conversa_id):
+    """Sala de chat entre médico e candidato (PCD)"""
+
+    conversa = get_object_or_404(
+        ConversaMedico,
+        id=conversa_id,
+        medico=request.user
+    )
+
+    if request.method == 'POST':
+        # Enviar nova mensagem
+        conteudo = request.POST.get('mensagem', '').strip()
+        arquivo = request.FILES.get('arquivo')
+
+        # Validar que existe conteúdo ou arquivo
+        if not conteudo and not arquivo:
+            messages.error(request, 'Por favor, envie uma mensagem ou um arquivo.')
+            return redirect('sala_chat_medico', conversa_id=conversa.id)
+
+        # Validar tipo e tamanho do arquivo
+        if arquivo:
+            # Validar extensão
+            extensoes_permitidas = ['.pdf', '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.doc', '.docx']
+            arquivo_nome = arquivo.name.lower()
+            if not any(arquivo_nome.endswith(ext) for ext in extensoes_permitidas):
+                messages.error(request, 'Tipo de arquivo não permitido. Envie PDF, imagens ou documentos Word.')
+                return redirect('sala_chat_medico', conversa_id=conversa.id)
+
+            # Validar tamanho (máximo 10MB)
+            if arquivo.size > 10 * 1024 * 1024:
+                messages.error(request, 'O arquivo não pode ter mais de 10MB.')
+                return redirect('sala_chat_medico', conversa_id=conversa.id)
+
+        try:
+            mensagem = MensagemMedico.objects.create(
+                conversa=conversa,
+                remetente_medico=True,
+                conteudo=conteudo,
+                arquivo=arquivo
+            )
+
+            # Atualizar timestamp da conversa
+            conversa.atualizada_em = timezone.now()
+            conversa.save()
+
+            # Criar notificação para o PCD
+            Notificacao.objects.create(
+                user=conversa.pcd.user,
+                tipo='sistema',
+                titulo='Nova mensagem do médico',
+                mensagem=f'Você recebeu uma nova mensagem do Dr(a). {request.user.medicoprofile.nome_completo}.'
+            )
+
+            messages.success(request, 'Mensagem enviada com sucesso!')
+            return redirect('sala_chat_medico', conversa_id=conversa.id)
+
+        except Exception as e:
+            messages.error(request, f'Erro ao enviar mensagem: {str(e)}')
+
+    # Marcar mensagens não lidas como lidas
+    mensagens_nao_lidas = conversa.mensagens_medico.filter(
+        remetente_medico=False,
+        lida=False
+    )
+    mensagens_nao_lidas.update(lida=True)
+
+    # Buscar todas as mensagens da conversa
+    mensagens = conversa.mensagens_medico.all()
+
+    # Buscar última classificação do PCD
+    ultima_classificacao = conversa.pcd.classificacoes.order_by('-criado_em').first()
+
+    context = {
+        'conversa': conversa,
+        'mensagens': mensagens,
+        'candidato': conversa.pcd,
+        'ultima_classificacao': ultima_classificacao,
+    }
+
+    return render(request, 'medico/sala_chat.html', context)
+
+
+@login_required
+@medico_required
+def iniciar_conversa_medico(request, pcd_id):
+    """Iniciar conversa com um candidato (PCD) - médico pode iniciar"""
+
+    pcd = get_object_or_404(PCDProfile, id=pcd_id)
+
+    # Obter ou criar conversa
+    conversa, created = ConversaMedico.objects.get_or_create(
+        pcd=pcd,
+        medico=request.user
+    )
+
+    if created:
+        messages.success(request, f'Conversa iniciada com {pcd.nome_completo}!')
+    else:
+        messages.info(request, 'Retornando à conversa existente.')
+
+    return redirect('sala_chat_medico', conversa_id=conversa.id)

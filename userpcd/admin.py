@@ -2,7 +2,7 @@ from django.contrib import admin
 from unfold.admin import ModelAdmin
 from unfold.contrib.filters.admin import RangeDateFilter
 from django.utils.html import format_html
-from .models import Vaga, Candidatura, Documento, Notificacao, PerfilPCDExtendido, Conversa, Mensagem
+from .models import Vaga, Candidatura, Documento, Notificacao, PerfilPCDExtendido, Conversa, Mensagem, ConversaMedico, MensagemMedico
 
 
 @admin.register(Vaga)
@@ -192,6 +192,71 @@ class MensagemAdmin(ModelAdmin):
         self.message_user(request, f'{updated} mensagens marcadas como lidas.')
     marcar_como_lida.short_description = 'Marcar como lida'
     
+    def marcar_como_nao_lida(self, request, queryset):
+        updated = queryset.update(lida=False)
+        self.message_user(request, f'{updated} mensagens marcadas como não lidas.')
+    marcar_como_nao_lida.short_description = 'Marcar como não lida'
+
+
+@admin.register(ConversaMedico)
+class ConversaMedicoAdmin(ModelAdmin):
+    list_display = ['get_pcd', 'get_medico', 'criada_em', 'get_mensagens_count']
+    list_filter = ['criada_em', 'atualizada_em']
+    search_fields = ['pcd__user__username', 'pcd__nome_completo', 'medico__username', 'medico__medicoprofile__nome_completo']
+    date_hierarchy = 'criada_em'
+
+    def get_pcd(self, obj):
+        nome = obj.pcd.nome_completo or obj.pcd.user.username
+        return format_html('<strong>{}</strong>', nome)
+    get_pcd.short_description = 'PCD'
+
+    def get_medico(self, obj):
+        if hasattr(obj.medico, 'medicoprofile'):
+            return format_html('<strong>Dr(a). {}</strong>', obj.medico.medicoprofile.nome_completo)
+        return format_html('<strong>{}</strong>', obj.medico.username)
+    get_medico.short_description = 'Médico'
+
+    def get_mensagens_count(self, obj):
+        return obj.mensagens_medico.count()
+    get_mensagens_count.short_description = 'Total de Mensagens'
+
+
+@admin.register(MensagemMedico)
+class MensagemMedicoAdmin(ModelAdmin):
+    list_display = ['get_conversa', 'get_remetente', 'get_conteudo_resumido', 'lida', 'enviada_em']
+    list_filter = ['remetente_medico', 'lida', 'enviada_em']
+    search_fields = ['conteudo', 'conversa__pcd__user__username', 'conversa__medico__username']
+    date_hierarchy = 'enviada_em'
+    list_editable = ['lida']
+
+    def get_conversa(self, obj):
+        pcd_nome = obj.conversa.pcd.nome_completo or obj.conversa.pcd.user.username
+        medico_nome = obj.conversa.medico.medicoprofile.nome_completo if hasattr(obj.conversa.medico, 'medicoprofile') else obj.conversa.medico.username
+        return f"{pcd_nome} ↔ Dr(a). {medico_nome}"
+    get_conversa.short_description = 'Conversa'
+
+    def get_remetente(self, obj):
+        if obj.remetente_medico:
+            return format_html('<span style="color: #0ea5e9;">📤 Médico</span>')
+        else:
+            return format_html('<span style="color: #9333ea;">📥 PCD</span>')
+    get_remetente.short_description = 'Remetente'
+
+    def get_conteudo_resumido(self, obj):
+        if obj.conteudo:
+            return obj.conteudo[:100] + '...' if len(obj.conteudo) > 100 else obj.conteudo
+        elif obj.arquivo:
+            return '[Arquivo anexado]'
+        return '-'
+    get_conteudo_resumido.short_description = 'Conteúdo'
+
+    actions = ['marcar_como_lida', 'marcar_como_nao_lida']
+
+    def marcar_como_lida(self, request, queryset):
+        updated = queryset.update(lida=True)
+        self.message_user(request, f'{updated} mensagens marcadas como lidas.')
+    marcar_como_lida.short_description = 'Marcar como lida'
+
     def marcar_como_nao_lida(self, request, queryset):
         updated = queryset.update(lida=False)
         self.message_user(request, f'{updated} mensagens marcadas como não lidas.')

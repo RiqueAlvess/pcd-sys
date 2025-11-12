@@ -1,0 +1,134 @@
+{% extends 'medico/base.html' %}
+
+{% block title %}Conversas - Portal PCD{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <!-- Header -->
+  <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+    <div class="flex justify-between items-center">
+      <h1 class="text-3xl font-bold text-sky-800">Conversas com Candidatos</h1>
+      <a href="{% url 'dashboard_medico' %}" class="bg-sky-600 hover:bg-sky-700 text-white px-4 py-2 rounded-lg transition">
+        ← Voltar ao Dashboard
+      </a>
+    </div>
+    <p class="text-gray-600 mt-2">Total de conversas: {{ total_conversas }}</p>
+  </div>
+
+  <!-- Messages -->
+  {% if messages %}
+    <div class="mb-6">
+      {% for message in messages %}
+        <div class="bg-{{ message.tags }}-100 border border-{{ message.tags }}-400 text-{{ message.tags }}-700 px-4 py-3 rounded-lg mb-2">
+          {{ message }}
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <!-- Lista de Conversas -->
+  <div class="bg-white rounded-lg shadow-md overflow-hidden">
+    {% if page_obj %}
+      <div class="divide-y divide-gray-200">
+        {% for conversa in page_obj %}
+          <div class="p-6 hover:bg-gray-50 transition">
+            <div class="flex justify-between items-start">
+              <div class="flex-1">
+                <div class="flex items-center gap-3 mb-2">
+                  <div class="w-12 h-12 bg-sky-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                    {{ conversa.pcd.user.username|first|upper }}
+                  </div>
+                  <div>
+                    <h3 class="text-xl font-semibold text-gray-900">
+                      {{ conversa.pcd.nome_completo|default:conversa.pcd.user.username }}
+                    </h3>
+                    <div class="flex gap-2 mt-1">
+                      {% if conversa.pcd.deficiencias.all %}
+                        <span class="text-xs text-gray-600">
+                          {{ conversa.pcd.deficiencias.all|length }} deficiência{{ conversa.pcd.deficiencias.all|length|pluralize }}
+                        </span>
+                      {% endif %}
+                      {% if conversa.pcd.perfil_extendido %}
+                        <span class="text-xs px-2 py-1 rounded-full
+                          {% if conversa.pcd.perfil_extendido.status_medico == 'enquadravel' %}bg-green-100 text-green-800
+                          {% elif conversa.pcd.perfil_extendido.status_medico == 'sugestivo' %}bg-yellow-100 text-yellow-800
+                          {% elif conversa.pcd.perfil_extendido.status_medico == 'nao_enquadravel' %}bg-red-100 text-red-800
+                          {% else %}bg-gray-100 text-gray-800{% endif %}">
+                          {{ conversa.pcd.perfil_extendido.get_status_medico_display }}
+                        </span>
+                      {% endif %}
+                    </div>
+                  </div>
+                </div>
+
+                {% if conversa.ultima_msg %}
+                  <div class="ml-15 mt-2">
+                    <p class="text-gray-700">
+                      <span class="font-semibold">
+                        {% if conversa.ultima_msg.remetente_medico %}Você:{% else %}{{ conversa.pcd.nome_completo|default:conversa.pcd.user.username }}:{% endif %}
+                      </span>
+                      {% if conversa.ultima_msg.conteudo %}
+                        {{ conversa.ultima_msg.conteudo|truncatewords:20 }}
+                      {% elif conversa.ultima_msg.arquivo %}
+                        [Arquivo anexado]
+                      {% endif %}
+                    </p>
+                    <p class="text-xs text-gray-500 mt-1">{{ conversa.ultima_msg.enviada_em|date:"d/m/Y H:i" }}</p>
+                  </div>
+                {% else %}
+                  <p class="text-gray-500 ml-15">Nenhuma mensagem ainda</p>
+                {% endif %}
+              </div>
+
+              <div class="flex flex-col items-end gap-2">
+                {% if conversa.nao_lidas > 0 %}
+                  <span class="bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full">
+                    {{ conversa.nao_lidas }} nova{{ conversa.nao_lidas|pluralize }}
+                  </span>
+                {% endif %}
+                <a href="{% url 'sala_chat_medico' conversa.id %}"
+                   class="bg-sky-600 hover:bg-sky-700 text-white px-6 py-2 rounded-lg transition font-medium">
+                  Abrir Chat
+                </a>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+
+      <!-- Paginação -->
+      {% if page_obj.has_other_pages %}
+        <div class="bg-gray-50 px-6 py-4 flex justify-center gap-2">
+          {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}"
+               class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-100">
+              ← Anterior
+            </a>
+          {% endif %}
+
+          <span class="px-4 py-2 text-gray-700">
+            Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+          </span>
+
+          {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}"
+               class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-100">
+              Próxima →
+            </a>
+          {% endif %}
+        </div>
+      {% endif %}
+    {% else %}
+      <div class="p-12 text-center">
+        <div class="text-6xl mb-4">💬</div>
+        <h3 class="text-xl font-semibold text-gray-700 mb-2">Nenhuma conversa ainda</h3>
+        <p class="text-gray-600">Você ainda não iniciou conversas com candidatos.</p>
+        <a href="{% url 'lista_pcd_pendentes' %}"
+           class="inline-block mt-4 bg-sky-600 hover:bg-sky-700 text-white px-6 py-3 rounded-lg transition">
+          Ver Candidatos
+        </a>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

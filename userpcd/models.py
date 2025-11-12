@@ -204,7 +204,8 @@ class Mensagem(models.Model):
     """Mensagem trocada entre PCD e Empresa"""
     conversa = models.ForeignKey(Conversa, on_delete=models.CASCADE, related_name='mensagens')
     remetente_empresa = models.BooleanField(default=False, help_text="True se remetente é empresa, False se é PCD")
-    conteudo = models.TextField()
+    conteudo = models.TextField(blank=True)
+    arquivo = models.FileField(upload_to='chat/arquivos/', blank=True, null=True, help_text="Arquivo anexado (PDF, imagem, etc)")
     lida = models.BooleanField(default=False)
     enviada_em = models.DateTimeField(auto_now_add=True)
 
@@ -213,6 +214,8 @@ class Mensagem(models.Model):
 
     def __str__(self):
         remetente = "Empresa" if self.remetente_empresa else "PCD"
+        if self.arquivo:
+            return f"{remetente}: [Arquivo: {self.arquivo.name}]"
         return f"{remetente}: {self.conteudo[:50]}..."
 
     def marcar_como_lida(self):
@@ -220,3 +223,22 @@ class Mensagem(models.Model):
         if not self.lida:
             self.lida = True
             self.save()
+
+    def get_nome_arquivo(self):
+        """Retorna apenas o nome do arquivo sem o caminho"""
+        if self.arquivo:
+            return os.path.basename(self.arquivo.name)
+        return None
+
+    def is_imagem(self):
+        """Verifica se o arquivo é uma imagem"""
+        if self.arquivo:
+            extensoes_imagem = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp']
+            return any(self.arquivo.name.lower().endswith(ext) for ext in extensoes_imagem)
+        return False
+
+    def delete(self, *args, **kwargs):
+        """Remove arquivo do disco ao deletar mensagem"""
+        if self.arquivo and os.path.isfile(self.arquivo.path):
+            os.remove(self.arquivo.path)
+        super().delete(*args, **kwargs)

@@ -387,7 +387,7 @@ def notificacoes_dropdown(request):
 
 @login_required
 def lista_conversas_pcd(request):
-    """Lista de conversas do usuário PCD"""
+    """Lista de conversas do usuário PCD - Layout integrado"""
     if not request.user.is_pcd():
         messages.error(request, 'Acesso negado.')
         return redirect('landing')
@@ -404,14 +404,88 @@ def lista_conversas_pcd(request):
         conversa.ultima_msg = conversa.ultima_mensagem()
         conversa.nao_lidas = conversa.mensagens_nao_lidas_pcd()
 
-    # Paginação
-    paginator = Paginator(conversas, 15)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
+    # Verificar se há uma conversa ativa (selecionada)
+    conversa_id = request.GET.get('conversa')
+    conversa_ativa = None
+    mensagens = []
+    vaga_encerrada = False
+
+    if conversa_id:
+        try:
+            conversa_ativa = Conversa.objects.select_related(
+                'empresa__user', 'vaga', 'candidatura'
+            ).get(id=conversa_id, pcd=pcd_profile)
+
+            # Verificar se a vaga está encerrada
+            vaga_encerrada = conversa_ativa.vaga and conversa_ativa.vaga.status == 'encerrada'
+
+            # Processar POST (envio de mensagem)
+            if request.method == 'POST':
+                if vaga_encerrada:
+                    messages.error(request, 'Não é possível enviar mensagens. A vaga foi encerrada.')
+                    return redirect(f'{request.path}?conversa={conversa_id}')
+
+                # Enviar nova mensagem
+                conteudo = request.POST.get('mensagem', '').strip()
+                arquivo = request.FILES.get('arquivo')
+
+                # Validar que existe conteúdo ou arquivo
+                if not conteudo and not arquivo:
+                    messages.error(request, 'Por favor, envie uma mensagem ou um arquivo.')
+                    return redirect(f'{request.path}?conversa={conversa_id}')
+
+                # Validar tipo e tamanho do arquivo
+                if arquivo:
+                    # Validar extensão
+                    extensoes_permitidas = ['.pdf', '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.doc', '.docx']
+                    arquivo_nome = arquivo.name.lower()
+                    if not any(arquivo_nome.endswith(ext) for ext in extensoes_permitidas):
+                        messages.error(request, 'Tipo de arquivo não permitido. Envie PDF, imagens ou documentos Word.')
+                        return redirect(f'{request.path}?conversa={conversa_id}')
+
+                    # Validar tamanho (máximo 10MB)
+                    if arquivo.size > 10 * 1024 * 1024:
+                        messages.error(request, 'O arquivo não pode ter mais de 10MB.')
+                        return redirect(f'{request.path}?conversa={conversa_id}')
+
+                try:
+                    mensagem = Mensagem.objects.create(
+                        conversa=conversa_ativa,
+                        remetente_empresa=False,
+                        conteudo=conteudo,
+                        arquivo=arquivo
+                    )
+
+                    # Atualizar timestamp da conversa
+                    conversa_ativa.atualizada_em = timezone.now()
+                    conversa_ativa.save()
+
+                    messages.success(request, 'Mensagem enviada com sucesso!')
+                    return redirect(f'{request.path}?conversa={conversa_id}')
+
+                except Exception as e:
+                    messages.error(request, f'Erro ao enviar mensagem: {str(e)}')
+
+            # Marcar mensagens não lidas como lidas
+            mensagens_nao_lidas = conversa_ativa.mensagens.filter(
+                remetente_empresa=True,
+                lida=False
+            )
+            mensagens_nao_lidas.update(lida=True)
+
+            # Buscar todas as mensagens da conversa
+            mensagens = conversa_ativa.mensagens.all()
+
+        except Conversa.DoesNotExist:
+            messages.error(request, 'Conversa não encontrada.')
+            return redirect('lista_conversas_pcd')
 
     context = {
-        'page_obj': page_obj,
+        'conversas': conversas,
         'total_conversas': conversas.count(),
+        'conversa_ativa': conversa_ativa,
+        'mensagens': mensagens,
+        'vaga_encerrada': vaga_encerrada,
     }
 
     return render(request, 'userpcd/lista_conversas_pcd.html', context)

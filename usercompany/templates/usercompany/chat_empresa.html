@@ -1,0 +1,292 @@
+{% extends "usercompany/base.html" %}
+{% block title %}Mensagens - Portal PCD{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <!-- Header -->
+  <div>
+    <h1 class="text-2xl font-bold text-gray-900">Mensagens</h1>
+    <p class="text-gray-600 mt-1">Converse com seus candidatos</p>
+  </div>
+
+  <!-- Layout Split: Lista + Chat -->
+  <div class="grid grid-cols-12 gap-6 h-[calc(100vh-250px)]">
+    <!-- Sidebar - Lista de Conversas -->
+    <div class="col-span-12 lg:col-span-4 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col">
+      <!-- Header da Lista -->
+      <div class="p-4 border-b border-gray-200 bg-gray-50">
+        <div class="flex items-center justify-between">
+          <h2 class="text-lg font-semibold text-gray-900">Conversas</h2>
+          <span class="text-sm text-gray-500">{{ total_conversas }} total</span>
+        </div>
+      </div>
+
+      <!-- Lista de Conversas -->
+      <div class="flex-1 overflow-y-auto">
+        {% if conversas %}
+          {% for conversa in conversas %}
+            <a href="?conversa={{ conversa.id }}"
+               class="block p-4 border-b border-gray-100 hover:bg-gray-50 transition {% if conversa.id == conversa_ativa.id %}bg-green-50 border-l-4 border-l-green-600{% endif %}">
+              <div class="flex items-start space-x-3">
+                <!-- Avatar -->
+                <div class="flex-shrink-0">
+                  <div class="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center text-white font-bold">
+                    {{ conversa.pcd.user.username|first|upper }}
+                  </div>
+                </div>
+
+                <!-- Conteúdo -->
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center justify-between mb-1">
+                    <h3 class="text-sm font-semibold text-gray-900 truncate">
+                      {{ conversa.pcd.user.username }}
+                    </h3>
+                    {% if conversa.nao_lidas > 0 %}
+                      <span class="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                        {{ conversa.nao_lidas }}
+                      </span>
+                    {% endif %}
+                  </div>
+
+                  {% if conversa.pcd.nome_completo %}
+                    <p class="text-xs text-gray-600 truncate">{{ conversa.pcd.nome_completo }}</p>
+                  {% endif %}
+
+                  {% if conversa.vaga %}
+                    <p class="text-xs text-gray-500 truncate mt-1">
+                      <svg class="w-3 h-3 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 002 2h2a2 2 0 002-2V6"/>
+                      </svg>
+                      {{ conversa.vaga.titulo|truncatewords:5 }}
+                    </p>
+                  {% endif %}
+
+                  {% if conversa.ultima_msg %}
+                    <p class="text-xs text-gray-500 mt-1 truncate">
+                      <span class="font-medium">
+                        {% if conversa.ultima_msg.remetente_empresa %}Você:{% else %}{{ conversa.pcd.user.username }}:{% endif %}
+                      </span>
+                      {{ conversa.ultima_msg.conteudo|truncatewords:8 }}
+                    </p>
+                    <p class="text-xs text-gray-400 mt-1">{{ conversa.ultima_msg.enviada_em|timesince }} atrás</p>
+                  {% endif %}
+                </div>
+              </div>
+            </a>
+          {% endfor %}
+        {% else %}
+          <div class="p-8 text-center">
+            <div class="text-gray-400 mb-4">
+              <svg class="mx-auto h-16 w-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+              </svg>
+            </div>
+            <h3 class="text-sm font-medium text-gray-700 mb-1">Nenhuma conversa</h3>
+            <p class="text-xs text-gray-500">Você ainda não iniciou conversas com candidatos</p>
+            <a href="{% url 'minhas_vagas' %}"
+               class="inline-block mt-4 text-sm text-green-600 hover:text-green-700">
+              Ver Minhas Vagas →
+            </a>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Área Principal - Chat -->
+    <div class="col-span-12 lg:col-span-8 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col">
+      {% if conversa_ativa %}
+        <!-- Header do Chat -->
+        <div class="p-4 border-b border-gray-200 bg-gray-50">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+              <div class="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center text-white font-bold">
+                {{ conversa_ativa.pcd.user.username|first|upper }}
+              </div>
+              <div>
+                <h2 class="text-base font-semibold text-gray-900">
+                  {{ conversa_ativa.pcd.user.username }}
+                </h2>
+                {% if conversa_ativa.pcd.nome_completo %}
+                  <p class="text-sm text-gray-600">{{ conversa_ativa.pcd.nome_completo }}</p>
+                {% endif %}
+                {% if conversa_ativa.vaga %}
+                  <p class="text-xs text-green-600 mt-0.5">
+                    <svg class="w-3 h-3 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 002 2h2a2 2 0 002-2V6"/>
+                    </svg>
+                    {{ conversa_ativa.vaga.titulo }}
+                  </p>
+                {% endif %}
+              </div>
+            </div>
+            {% if conversa_ativa.candidatura %}
+              <a href="{% url 'visualizar_curriculo' conversa_ativa.candidatura.id %}"
+                 class="inline-flex items-center px-3 py-1.5 bg-green-100 text-green-700 rounded-lg text-xs font-medium hover:bg-green-200 focus-visible">
+                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                Ver Currículo
+              </a>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Aviso de vaga encerrada -->
+        {% if vaga_encerrada %}
+          <div class="mx-4 mt-4 bg-yellow-50 border border-yellow-400 text-yellow-800 px-4 py-3 rounded-lg">
+            <div class="flex items-center">
+              <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+              </svg>
+              <div>
+                <p class="font-semibold text-sm">Vaga Encerrada</p>
+                <p class="text-xs">Esta vaga foi encerrada. Não é mais possível enviar novas mensagens.</p>
+              </div>
+            </div>
+          </div>
+        {% endif %}
+
+        <!-- Mensagens -->
+        <div id="chat-messages" class="flex-1 p-4 space-y-4 overflow-y-auto bg-gray-50">
+          {% if mensagens %}
+            {% for msg in mensagens %}
+              <div class="flex {% if msg.remetente_empresa %}justify-end{% else %}justify-start{% endif %}">
+                <div class="max-w-lg">
+                  <div class="{% if msg.remetente_empresa %}bg-green-600 text-white{% else %}bg-white text-gray-900 border border-gray-200{% endif %} rounded-lg px-4 py-3 shadow-sm">
+                    <p class="text-xs font-semibold mb-1 {% if msg.remetente_empresa %}text-green-100{% else %}text-gray-600{% endif %}">
+                      {% if msg.remetente_empresa %}Você{% else %}{{ conversa_ativa.pcd.user.username }}{% endif %}
+                    </p>
+
+                    {% if msg.conteudo %}
+                      <p class="text-sm whitespace-pre-wrap">{{ msg.conteudo }}</p>
+                    {% endif %}
+
+                    {% if msg.arquivo %}
+                      <div class="mt-2 {% if msg.remetente_empresa %}bg-green-700{% else %}bg-gray-100{% endif %} rounded-lg p-3">
+                        {% if msg.is_imagem %}
+                          <a href="{{ msg.arquivo.url }}" target="_blank" class="block">
+                            <img src="{{ msg.arquivo.url }}" alt="{{ msg.get_nome_arquivo }}" class="max-w-full h-auto rounded">
+                          </a>
+                        {% else %}
+                          <a href="{{ msg.arquivo.url }}" target="_blank" class="flex items-center hover:underline">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            <span class="text-xs">{{ msg.get_nome_arquivo }}</span>
+                          </a>
+                        {% endif %}
+                      </div>
+                    {% endif %}
+                  </div>
+                  <p class="text-xs text-gray-500 mt-1 {% if msg.remetente_empresa %}text-right{% endif %}">
+                    {{ msg.enviada_em|date:"d/m/Y H:i" }}
+                    {% if msg.remetente_empresa and msg.lida %}
+                      <span class="text-green-600">✓✓</span>
+                    {% endif %}
+                  </p>
+                </div>
+              </div>
+            {% endfor %}
+          {% else %}
+            <div class="text-center text-gray-500 py-12">
+              <div class="text-6xl mb-4">💬</div>
+              <p>Nenhuma mensagem ainda. Inicie a conversa!</p>
+            </div>
+          {% endif %}
+        </div>
+
+        <!-- Formulário de envio -->
+        {% if not vaga_encerrada %}
+          <div class="border-t border-gray-200 p-4 bg-white">
+            <form method="POST" enctype="multipart/form-data" id="chat-form">
+              {% csrf_token %}
+              <div class="flex gap-3 items-end">
+                <div class="flex-1">
+                  <textarea
+                    name="mensagem"
+                    id="mensagem-input"
+                    rows="2"
+                    placeholder="Digite sua mensagem..."
+                    class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-600 resize-none text-sm"
+                  ></textarea>
+                  <div id="arquivo-preview" class="mt-2 hidden">
+                    <div class="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+                      <span id="arquivo-nome" class="text-sm text-green-800"></span>
+                      <button type="button" onclick="removerArquivo()" class="text-green-600 hover:text-green-800">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div class="flex gap-2">
+                  <label for="arquivo-input" class="cursor-pointer bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg transition font-medium">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
+                    </svg>
+                  </label>
+                  <input type="file" id="arquivo-input" name="arquivo" class="hidden" accept=".pdf,.jpg,.jpeg,.png,.gif,.bmp,.webp,.doc,.docx" onchange="mostrarArquivo()">
+                  <button
+                    type="submit"
+                    class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg transition font-medium text-sm">
+                    Enviar
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        {% endif %}
+      {% else %}
+        <!-- Estado vazio - Nenhuma conversa selecionada -->
+        <div class="flex-1 flex items-center justify-center p-8">
+          <div class="text-center">
+            <div class="text-gray-300 mb-4">
+              <svg class="mx-auto h-24 w-24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+              </svg>
+            </div>
+            <h3 class="text-lg font-medium text-gray-700 mb-2">Selecione uma conversa</h3>
+            <p class="text-sm text-gray-500">Escolha uma conversa na lista para começar a enviar mensagens</p>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<script>
+  // Auto-scroll para a última mensagem
+  const chatMessages = document.getElementById('chat-messages');
+  if (chatMessages) {
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+
+  // Funções para gerenciar arquivo
+  function mostrarArquivo() {
+    const input = document.getElementById('arquivo-input');
+    const preview = document.getElementById('arquivo-preview');
+    const nomeArquivo = document.getElementById('arquivo-nome');
+
+    if (input.files.length > 0) {
+      nomeArquivo.textContent = input.files[0].name;
+      preview.classList.remove('hidden');
+    }
+  }
+
+  function removerArquivo() {
+    const input = document.getElementById('arquivo-input');
+    const preview = document.getElementById('arquivo-preview');
+
+    input.value = '';
+    preview.classList.add('hidden');
+  }
+
+  // Auto-refresh a cada 10 segundos
+  {% if conversa_ativa %}
+  setInterval(() => {
+    location.reload();
+  }, 10000);
+  {% endif %}
+</script>
+{% endblock %}

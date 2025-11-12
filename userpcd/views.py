@@ -504,6 +504,54 @@ def sala_chat_pcd(request, conversa_id):
 
 
 @login_required
+def buscar_mensagens_pcd(request, conversa_id):
+    """Endpoint AJAX para buscar novas mensagens do chat PCD"""
+    if not request.user.is_pcd():
+        return JsonResponse({'error': 'Acesso negado'}, status=403)
+
+    pcd_profile = get_object_or_404(PCDProfile, user=request.user)
+    conversa = get_object_or_404(
+        Conversa,
+        id=conversa_id,
+        pcd=pcd_profile
+    )
+
+    # Buscar ID da última mensagem recebida pelo cliente
+    ultima_msg_id = request.GET.get('ultima_msg_id', 0)
+
+    # Buscar mensagens novas
+    mensagens_novas = conversa.mensagens.filter(
+        id__gt=ultima_msg_id
+    ).order_by('enviada_em')
+
+    # Marcar mensagens da empresa como lidas
+    mensagens_novas.filter(
+        remetente_empresa=True,
+        lida=False
+    ).update(lida=True)
+
+    # Preparar dados das mensagens
+    mensagens_data = []
+    for msg in mensagens_novas:
+        msg_data = {
+            'id': msg.id,
+            'conteudo': msg.conteudo,
+            'remetente_empresa': msg.remetente_empresa,
+            'enviada_em': msg.enviada_em.strftime('%d/%m/%Y %H:%M'),
+            'lida': msg.lida,
+            'arquivo_url': msg.arquivo.url if msg.arquivo else None,
+            'arquivo_nome': msg.get_nome_arquivo() if msg.arquivo else None,
+            'is_imagem': msg.is_imagem() if msg.arquivo else False,
+        }
+        mensagens_data.append(msg_data)
+
+    return JsonResponse({
+        'mensagens': mensagens_data,
+        'empresa_nome': conversa.empresa.razao_social
+    })
+
+
+@login_required
 def lista_conversas_medico_pcd(request):
     """Lista de conversas do PCD com médicos"""
     if not request.user.is_pcd():
@@ -612,3 +660,51 @@ def sala_chat_medico_pcd(request, conversa_id):
     }
 
     return render(request, 'userpcd/sala_chat_medico.html', context)
+
+
+@login_required
+def buscar_mensagens_medico_pcd(request, conversa_id):
+    """Endpoint AJAX para buscar novas mensagens do chat médico PCD"""
+    if not request.user.is_pcd():
+        return JsonResponse({'error': 'Acesso negado'}, status=403)
+
+    pcd_profile = get_object_or_404(PCDProfile, user=request.user)
+    conversa = get_object_or_404(
+        ConversaMedico,
+        id=conversa_id,
+        pcd=pcd_profile
+    )
+
+    # Buscar ID da última mensagem recebida pelo cliente
+    ultima_msg_id = request.GET.get('ultima_msg_id', 0)
+
+    # Buscar mensagens novas
+    mensagens_novas = conversa.mensagens_medico.filter(
+        id__gt=ultima_msg_id
+    ).order_by('enviada_em')
+
+    # Marcar mensagens do médico como lidas
+    mensagens_novas.filter(
+        remetente_medico=True,
+        lida=False
+    ).update(lida=True)
+
+    # Preparar dados das mensagens
+    mensagens_data = []
+    for msg in mensagens_novas:
+        msg_data = {
+            'id': msg.id,
+            'conteudo': msg.conteudo,
+            'remetente_medico': msg.remetente_medico,
+            'enviada_em': msg.enviada_em.strftime('%d/%m/%Y %H:%M'),
+            'lida': msg.lida,
+            'arquivo_url': msg.arquivo.url if msg.arquivo else None,
+            'arquivo_nome': msg.get_nome_arquivo() if msg.arquivo else None,
+            'is_imagem': msg.is_imagem() if msg.arquivo else False,
+        }
+        mensagens_data.append(msg_data)
+
+    return JsonResponse({
+        'mensagens': mensagens_data,
+        'medico_nome': f"Dr(a). {conversa.medico.medicoprofile.nome_completo}" if hasattr(conversa.medico, 'medicoprofile') else conversa.medico.username
+    })

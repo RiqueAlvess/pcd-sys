@@ -10,22 +10,22 @@
       <div class="flex justify-between items-center">
         <div class="flex items-center gap-4">
           <a href="{% url 'lista_conversas_pcd' %}"
-             class="text-blue-600 hover:text-blue-800 transition">
+             class="text-green-600 hover:text-green-800 transition">
             ← Voltar
           </a>
-          <div class="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-xl">
+          <div class="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center text-white font-bold text-xl">
             {{ empresa.razao_social|first|upper }}
           </div>
           <div>
             <h1 class="text-2xl font-bold text-gray-900">{{ empresa.razao_social }}</h1>
             {% if vaga %}
-              <p class="text-sm text-blue-600">Vaga: {{ vaga.titulo }}</p>
+              <p class="text-sm text-green-600">Vaga: {{ vaga.titulo }}</p>
             {% endif %}
           </div>
         </div>
         {% if vaga %}
           <a href="{% url 'vagas_disponiveis' %}"
-             class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition">
+             class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition">
             Ver Vaga
           </a>
         {% endif %}
@@ -66,7 +66,7 @@
           {% for msg in mensagens %}
             <div class="flex {% if not msg.remetente_empresa %}justify-end{% else %}justify-start{% endif %}">
               <div class="max-w-lg">
-                <div class="{% if not msg.remetente_empresa %}bg-blue-600 text-white{% else %}bg-gray-200 text-gray-900{% endif %} rounded-lg px-4 py-3 shadow">
+                <div class="{% if not msg.remetente_empresa %}bg-green-600 text-white{% else %}bg-gray-200 text-gray-900{% endif %} rounded-lg px-4 py-3 shadow">
                   <p class="text-sm font-semibold mb-1">
                     {% if not msg.remetente_empresa %}Você{% else %}{{ empresa.razao_social }}{% endif %}
                   </p>
@@ -76,7 +76,7 @@
                   {% endif %}
 
                   {% if msg.arquivo %}
-                    <div class="mt-2 {% if not msg.remetente_empresa %}bg-blue-700{% else %}bg-gray-300{% endif %} rounded-lg p-3">
+                    <div class="mt-2 {% if not msg.remetente_empresa %}bg-green-700{% else %}bg-gray-300{% endif %} rounded-lg p-3">
                       {% if msg.is_imagem %}
                         <a href="{{ msg.arquivo.url }}" target="_blank" class="block">
                           <img src="{{ msg.arquivo.url }}" alt="{{ msg.get_nome_arquivo }}" class="max-w-full h-auto rounded">
@@ -121,12 +121,12 @@
                   id="mensagem-input"
                   rows="2"
                   placeholder="Digite sua mensagem..."
-                  class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-600 resize-none"
+                  class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-600 resize-none"
                 ></textarea>
                 <div id="arquivo-preview" class="mt-2 hidden">
-                  <div class="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
-                    <span id="arquivo-nome" class="text-sm text-blue-800"></span>
-                    <button type="button" onclick="removerArquivo()" class="text-blue-600 hover:text-blue-800">
+                  <div class="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+                    <span id="arquivo-nome" class="text-sm text-green-800"></span>
+                    <button type="button" onclick="removerArquivo()" class="text-green-600 hover:text-green-800">
                       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                       </svg>
@@ -143,7 +143,7 @@
                 <input type="file" id="arquivo-input" name="arquivo" class="hidden" accept=".pdf,.jpg,.jpeg,.png,.gif,.bmp,.webp,.doc,.docx" onchange="mostrarArquivo()">
                 <button
                   type="submit"
-                  class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2 rounded-lg transition font-medium">
+                  class="bg-green-600 hover:bg-green-700 text-white px-8 py-2 rounded-lg transition font-medium">
                   Enviar
                 </button>
               </div>
@@ -185,9 +185,15 @@
 <script>
   // Auto-scroll para a última mensagem
   const chatMessages = document.getElementById('chat-messages');
-  if (chatMessages) {
-    chatMessages.scrollTop = chatMessages.scrollHeight;
+
+  function scrollToBottom() {
+    if (chatMessages) {
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
   }
+
+  // Scroll inicial
+  scrollToBottom();
 
   // Funções para gerenciar arquivo
   function mostrarArquivo() {
@@ -209,9 +215,135 @@
     preview.classList.add('hidden');
   }
 
-  // Auto-refresh a cada 10 segundos
-  setInterval(() => {
-    location.reload();
-  }, 10000);
+  // Variável para guardar o ID da última mensagem
+  let ultimaMsgId = {% if mensagens %}{{ mensagens.last.id }}{% else %}0{% endif %};
+  const empresaNome = "{{ empresa.razao_social|escapejs }}";
+
+  // Função para criar elemento de mensagem
+  function criarMensagemElemento(msg) {
+    const isUsuario = !msg.remetente_empresa;
+    const divWrapper = document.createElement('div');
+    divWrapper.className = `flex ${isUsuario ? 'justify-end' : 'justify-start'}`;
+
+    const divContainer = document.createElement('div');
+    divContainer.className = 'max-w-lg';
+
+    const divMensagem = document.createElement('div');
+    divMensagem.className = `${isUsuario ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-900'} rounded-lg px-4 py-3 shadow`;
+
+    // Nome do remetente
+    const pNome = document.createElement('p');
+    pNome.className = 'text-sm font-semibold mb-1';
+    pNome.textContent = isUsuario ? 'Você' : empresaNome;
+    divMensagem.appendChild(pNome);
+
+    // Conteúdo da mensagem
+    if (msg.conteudo) {
+      const pConteudo = document.createElement('p');
+      pConteudo.className = 'whitespace-pre-wrap';
+      pConteudo.textContent = msg.conteudo;
+      divMensagem.appendChild(pConteudo);
+    }
+
+    // Arquivo (se houver)
+    if (msg.arquivo_url) {
+      const divArquivo = document.createElement('div');
+      divArquivo.className = `mt-2 ${isUsuario ? 'bg-green-700' : 'bg-gray-300'} rounded-lg p-3`;
+
+      if (msg.is_imagem) {
+        const a = document.createElement('a');
+        a.href = msg.arquivo_url;
+        a.target = '_blank';
+        a.className = 'block';
+
+        const img = document.createElement('img');
+        img.src = msg.arquivo_url;
+        img.alt = msg.arquivo_nome;
+        img.className = 'max-w-full h-auto rounded';
+
+        a.appendChild(img);
+        divArquivo.appendChild(a);
+      } else {
+        const a = document.createElement('a');
+        a.href = msg.arquivo_url;
+        a.target = '_blank';
+        a.className = 'flex items-center hover:underline';
+
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('class', 'w-5 h-5 mr-2');
+        svg.setAttribute('fill', 'none');
+        svg.setAttribute('stroke', 'currentColor');
+        svg.setAttribute('viewBox', '0 0 24 24');
+
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('stroke-linecap', 'round');
+        path.setAttribute('stroke-linejoin', 'round');
+        path.setAttribute('stroke-width', '2');
+        path.setAttribute('d', 'M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z');
+
+        svg.appendChild(path);
+        a.appendChild(svg);
+
+        const span = document.createElement('span');
+        span.className = 'text-sm';
+        span.textContent = msg.arquivo_nome;
+        a.appendChild(span);
+
+        divArquivo.appendChild(a);
+      }
+
+      divMensagem.appendChild(divArquivo);
+    }
+
+    divContainer.appendChild(divMensagem);
+
+    // Data e lida
+    const pData = document.createElement('p');
+    pData.className = `text-xs text-gray-500 mt-1 ${isUsuario ? 'text-right' : ''}`;
+    pData.textContent = msg.enviada_em;
+
+    if (isUsuario && msg.lida) {
+      const spanLida = document.createElement('span');
+      spanLida.className = 'text-green-600';
+      spanLida.textContent = ' ✓✓';
+      pData.appendChild(spanLida);
+    }
+
+    divContainer.appendChild(pData);
+    divWrapper.appendChild(divContainer);
+
+    return divWrapper;
+  }
+
+  // Função para buscar novas mensagens
+  async function buscarNovasMensagens() {
+    try {
+      const response = await fetch(`{% url 'buscar_mensagens_pcd' conversa.id %}?ultima_msg_id=${ultimaMsgId}`);
+
+      if (!response.ok) {
+        console.error('Erro ao buscar mensagens:', response.status);
+        return;
+      }
+
+      const data = await response.json();
+
+      if (data.mensagens && data.mensagens.length > 0) {
+        // Adicionar novas mensagens ao chat
+        data.mensagens.forEach(msg => {
+          const msgElement = criarMensagemElemento(msg);
+          chatMessages.appendChild(msgElement);
+          ultimaMsgId = msg.id; // Atualizar ID da última mensagem
+        });
+
+        // Scroll para baixo
+        scrollToBottom();
+      }
+    } catch (error) {
+      console.error('Erro ao buscar mensagens:', error);
+    }
+  }
+
+  // Buscar novas mensagens a cada 5 segundos
+  setInterval(buscarNovasMensagens, 5000);
 </script>
 {% endblock %}

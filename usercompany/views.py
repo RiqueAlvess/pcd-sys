@@ -776,6 +776,54 @@ def lista_conversas_empresa(request):
 
 
 @login_required
+def buscar_mensagens_empresa(request, conversa_id):
+    """Endpoint AJAX para buscar novas mensagens do chat da empresa"""
+    if not request.user.is_empresa():
+        return JsonResponse({'error': 'Acesso negado'}, status=403)
+
+    empresa = get_object_or_404(Empresa, user=request.user)
+    conversa = get_object_or_404(
+        Conversa,
+        id=conversa_id,
+        empresa=empresa
+    )
+
+    # Buscar ID da última mensagem recebida pelo cliente
+    ultima_msg_id = request.GET.get('ultima_msg_id', 0)
+
+    # Buscar mensagens novas
+    mensagens_novas = conversa.mensagens.filter(
+        id__gt=ultima_msg_id
+    ).order_by('enviada_em')
+
+    # Marcar mensagens do PCD como lidas
+    mensagens_novas.filter(
+        remetente_empresa=False,
+        lida=False
+    ).update(lida=True)
+
+    # Preparar dados das mensagens
+    mensagens_data = []
+    for msg in mensagens_novas:
+        msg_data = {
+            'id': msg.id,
+            'conteudo': msg.conteudo,
+            'remetente_empresa': msg.remetente_empresa,
+            'enviada_em': msg.enviada_em.strftime('%d/%m/%Y %H:%M'),
+            'lida': msg.lida,
+            'arquivo_url': msg.arquivo.url if msg.arquivo else None,
+            'arquivo_nome': msg.get_nome_arquivo() if msg.arquivo else None,
+            'is_imagem': msg.is_imagem() if msg.arquivo else False,
+        }
+        mensagens_data.append(msg_data)
+
+    return JsonResponse({
+        'mensagens': mensagens_data,
+        'candidato_nome': conversa.pcd.user.username
+    })
+
+
+@login_required
 def sala_chat_empresa(request, conversa_id):
     """Redireciona para o novo layout integrado de chat"""
     if not request.user.is_empresa():

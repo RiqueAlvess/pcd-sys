@@ -27,5 +27,6 @@ urlpatterns = [
     # Chat
     path('chat/', views.lista_conversas_empresa, name='lista_conversas_empresa'),
     path('chat/<int:conversa_id>/', views.sala_chat_empresa, name='sala_chat_empresa'),
+    path('chat/<int:conversa_id>/mensagens/', views.buscar_mensagens_empresa, name='buscar_mensagens_empresa'),
     path('candidatos/<int:candidatura_id>/iniciar-conversa/', views.iniciar_conversa, name='iniciar_conversa'),
 ]

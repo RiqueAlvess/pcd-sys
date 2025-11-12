@@ -432,6 +432,51 @@ def sala_chat_medico(request, conversa_id):
 
 @login_required
 @medico_required
+def buscar_mensagens_medico(request, conversa_id):
+    """Endpoint AJAX para buscar novas mensagens do chat médico"""
+    conversa = get_object_or_404(
+        ConversaMedico,
+        id=conversa_id,
+        medico=request.user
+    )
+
+    # Buscar ID da última mensagem recebida pelo cliente
+    ultima_msg_id = request.GET.get('ultima_msg_id', 0)
+
+    # Buscar mensagens novas
+    mensagens_novas = conversa.mensagens_medico.filter(
+        id__gt=ultima_msg_id
+    ).order_by('enviada_em')
+
+    # Marcar mensagens do PCD como lidas
+    mensagens_novas.filter(
+        remetente_medico=False,
+        lida=False
+    ).update(lida=True)
+
+    # Preparar dados das mensagens
+    mensagens_data = []
+    for msg in mensagens_novas:
+        msg_data = {
+            'id': msg.id,
+            'conteudo': msg.conteudo,
+            'remetente_medico': msg.remetente_medico,
+            'enviada_em': msg.enviada_em.strftime('%d/%m/%Y %H:%M'),
+            'lida': msg.lida,
+            'arquivo_url': msg.arquivo.url if msg.arquivo else None,
+            'arquivo_nome': msg.get_nome_arquivo() if msg.arquivo else None,
+            'is_imagem': msg.is_imagem() if msg.arquivo else False,
+        }
+        mensagens_data.append(msg_data)
+
+    return JsonResponse({
+        'mensagens': mensagens_data,
+        'candidato_nome': conversa.pcd.user.username
+    })
+
+
+@login_required
+@medico_required
 def iniciar_conversa_medico(request, pcd_id):
     """Iniciar conversa com um candidato (PCD) - médico pode iniciar"""
 

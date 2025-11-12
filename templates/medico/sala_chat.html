@@ -191,9 +191,15 @@
 <script>
   // Auto-scroll para a última mensagem
   const chatMessages = document.getElementById('chat-messages');
-  if (chatMessages) {
-    chatMessages.scrollTop = chatMessages.scrollHeight;
+
+  function scrollToBottom() {
+    if (chatMessages) {
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
   }
+
+  // Scroll inicial
+  scrollToBottom();
 
   // Funções para gerenciar arquivo
   function mostrarArquivo() {
@@ -215,9 +221,135 @@
     preview.classList.add('hidden');
   }
 
-  // Auto-refresh a cada 10 segundos
-  setInterval(() => {
-    location.reload();
-  }, 10000);
+  // Variável para guardar o ID da última mensagem
+  let ultimaMsgId = {% if mensagens %}{{ mensagens.last.id }}{% else %}0{% endif %};
+  const candidatoNome = "{{ candidato.user.username|escapejs }}";
+
+  // Função para criar elemento de mensagem
+  function criarMensagemElemento(msg) {
+    const isMedico = msg.remetente_medico;
+    const divWrapper = document.createElement('div');
+    divWrapper.className = `flex ${isMedico ? 'justify-end' : 'justify-start'}`;
+
+    const divContainer = document.createElement('div');
+    divContainer.className = 'max-w-lg';
+
+    const divMensagem = document.createElement('div');
+    divMensagem.className = `${isMedico ? 'bg-sky-600 text-white' : 'bg-gray-200 text-gray-900'} rounded-lg px-4 py-3 shadow`;
+
+    // Nome do remetente
+    const pNome = document.createElement('p');
+    pNome.className = 'text-sm font-semibold mb-1';
+    pNome.textContent = isMedico ? 'Você' : candidatoNome;
+    divMensagem.appendChild(pNome);
+
+    // Conteúdo da mensagem
+    if (msg.conteudo) {
+      const pConteudo = document.createElement('p');
+      pConteudo.className = 'whitespace-pre-wrap';
+      pConteudo.textContent = msg.conteudo;
+      divMensagem.appendChild(pConteudo);
+    }
+
+    // Arquivo (se houver)
+    if (msg.arquivo_url) {
+      const divArquivo = document.createElement('div');
+      divArquivo.className = `mt-2 ${isMedico ? 'bg-sky-700' : 'bg-gray-300'} rounded-lg p-3`;
+
+      if (msg.is_imagem) {
+        const a = document.createElement('a');
+        a.href = msg.arquivo_url;
+        a.target = '_blank';
+        a.className = 'block';
+
+        const img = document.createElement('img');
+        img.src = msg.arquivo_url;
+        img.alt = msg.arquivo_nome;
+        img.className = 'max-w-full h-auto rounded';
+
+        a.appendChild(img);
+        divArquivo.appendChild(a);
+      } else {
+        const a = document.createElement('a');
+        a.href = msg.arquivo_url;
+        a.target = '_blank';
+        a.className = 'flex items-center hover:underline';
+
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('class', 'w-5 h-5 mr-2');
+        svg.setAttribute('fill', 'none');
+        svg.setAttribute('stroke', 'currentColor');
+        svg.setAttribute('viewBox', '0 0 24 24');
+
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('stroke-linecap', 'round');
+        path.setAttribute('stroke-linejoin', 'round');
+        path.setAttribute('stroke-width', '2');
+        path.setAttribute('d', 'M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z');
+
+        svg.appendChild(path);
+        a.appendChild(svg);
+
+        const span = document.createElement('span');
+        span.className = 'text-sm';
+        span.textContent = msg.arquivo_nome;
+        a.appendChild(span);
+
+        divArquivo.appendChild(a);
+      }
+
+      divMensagem.appendChild(divArquivo);
+    }
+
+    divContainer.appendChild(divMensagem);
+
+    // Data e lida
+    const pData = document.createElement('p');
+    pData.className = `text-xs text-gray-500 mt-1 ${isMedico ? 'text-right' : ''}`;
+    pData.textContent = msg.enviada_em;
+
+    if (isMedico && msg.lida) {
+      const spanLida = document.createElement('span');
+      spanLida.className = 'text-green-600';
+      spanLida.textContent = ' ✓✓';
+      pData.appendChild(spanLida);
+    }
+
+    divContainer.appendChild(pData);
+    divWrapper.appendChild(divContainer);
+
+    return divWrapper;
+  }
+
+  // Função para buscar novas mensagens
+  async function buscarNovasMensagens() {
+    try {
+      const response = await fetch(`{% url 'buscar_mensagens_medico' conversa.id %}?ultima_msg_id=${ultimaMsgId}`);
+
+      if (!response.ok) {
+        console.error('Erro ao buscar mensagens:', response.status);
+        return;
+      }
+
+      const data = await response.json();
+
+      if (data.mensagens && data.mensagens.length > 0) {
+        // Adicionar novas mensagens ao chat
+        data.mensagens.forEach(msg => {
+          const msgElement = criarMensagemElemento(msg);
+          chatMessages.appendChild(msgElement);
+          ultimaMsgId = msg.id; // Atualizar ID da última mensagem
+        });
+
+        // Scroll para baixo
+        scrollToBottom();
+      }
+    } catch (error) {
+      console.error('Erro ao buscar mensagens:', error);
+    }
+  }
+
+  // Buscar novas mensagens a cada 5 segundos
+  setInterval(buscarNovasMensagens, 5000);
 </script>
 {% endblock %}

@@ -715,29 +715,55 @@ def sala_chat_empresa(request, conversa_id):
         empresa=empresa
     )
 
+    # Verificar se a vaga está encerrada
+    vaga_encerrada = conversa.vaga and conversa.vaga.status == 'encerrada'
+
     if request.method == 'POST':
+        # Verificar se pode enviar mensagens
+        if vaga_encerrada:
+            messages.error(request, 'Não é possível enviar mensagens. A vaga foi encerrada.')
+            return redirect('sala_chat_empresa', conversa_id=conversa.id)
+
         # Enviar nova mensagem
         conteudo = request.POST.get('mensagem', '').strip()
+        arquivo = request.FILES.get('arquivo')
 
-        if conteudo:
-            try:
-                mensagem = Mensagem.objects.create(
-                    conversa=conversa,
-                    remetente_empresa=True,
-                    conteudo=conteudo
-                )
+        # Validar que existe conteúdo ou arquivo
+        if not conteudo and not arquivo:
+            messages.error(request, 'Por favor, envie uma mensagem ou um arquivo.')
+            return redirect('sala_chat_empresa', conversa_id=conversa.id)
 
-                # Atualizar timestamp da conversa
-                conversa.atualizada_em = timezone.now()
-                conversa.save()
-
-                messages.success(request, 'Mensagem enviada com sucesso!')
+        # Validar tipo e tamanho do arquivo
+        if arquivo:
+            # Validar extensão
+            extensoes_permitidas = ['.pdf', '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.doc', '.docx']
+            arquivo_nome = arquivo.name.lower()
+            if not any(arquivo_nome.endswith(ext) for ext in extensoes_permitidas):
+                messages.error(request, 'Tipo de arquivo não permitido. Envie PDF, imagens ou documentos Word.')
                 return redirect('sala_chat_empresa', conversa_id=conversa.id)
 
-            except Exception as e:
-                messages.error(request, f'Erro ao enviar mensagem: {str(e)}')
-        else:
-            messages.error(request, 'A mensagem não pode estar vazia.')
+            # Validar tamanho (máximo 10MB)
+            if arquivo.size > 10 * 1024 * 1024:
+                messages.error(request, 'O arquivo não pode ter mais de 10MB.')
+                return redirect('sala_chat_empresa', conversa_id=conversa.id)
+
+        try:
+            mensagem = Mensagem.objects.create(
+                conversa=conversa,
+                remetente_empresa=True,
+                conteudo=conteudo,
+                arquivo=arquivo
+            )
+
+            # Atualizar timestamp da conversa
+            conversa.atualizada_em = timezone.now()
+            conversa.save()
+
+            messages.success(request, 'Mensagem enviada com sucesso!')
+            return redirect('sala_chat_empresa', conversa_id=conversa.id)
+
+        except Exception as e:
+            messages.error(request, f'Erro ao enviar mensagem: {str(e)}')
 
     # Marcar mensagens não lidas como lidas
     mensagens_nao_lidas = conversa.mensagens.filter(
@@ -755,6 +781,7 @@ def sala_chat_empresa(request, conversa_id):
         'candidato': conversa.pcd,
         'vaga': conversa.vaga,
         'candidatura': conversa.candidatura,
+        'vaga_encerrada': vaga_encerrada,
     }
 
     return render(request, 'usercompany/sala_chat_empresa.html', context)

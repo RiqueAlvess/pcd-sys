@@ -46,10 +46,25 @@
       </div>
     {% endif %}
 
+    <!-- Aviso de vaga encerrada -->
+    {% if vaga_encerrada %}
+      <div class="mb-6 bg-yellow-50 border border-yellow-400 text-yellow-800 px-6 py-4 rounded-lg">
+        <div class="flex items-center">
+          <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+          </svg>
+          <div>
+            <p class="font-semibold">Vaga Encerrada</p>
+            <p class="text-sm">Esta vaga foi encerrada. Não é mais possível enviar novas mensagens.</p>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+
     <!-- Chat Container -->
     <div class="bg-white rounded-lg shadow-md overflow-hidden" style="height: calc(100vh - 300px);">
       <!-- Mensagens -->
-      <div id="chat-messages" class="p-6 space-y-4 overflow-y-auto" style="height: calc(100% - 100px);">
+      <div id="chat-messages" class="p-6 space-y-4 overflow-y-auto" style="height: calc(100% - {% if vaga_encerrada %}100{% else %}150{% endif %}px);">
         {% if mensagens %}
           {% for msg in mensagens %}
             <div class="flex {% if msg.remetente_empresa %}justify-end{% else %}justify-start{% endif %}">
@@ -58,7 +73,27 @@
                   <p class="text-sm font-semibold mb-1">
                     {% if msg.remetente_empresa %}Você{% else %}{{ candidato.user.username }}{% endif %}
                   </p>
-                  <p class="whitespace-pre-wrap">{{ msg.conteudo }}</p>
+
+                  {% if msg.conteudo %}
+                    <p class="whitespace-pre-wrap">{{ msg.conteudo }}</p>
+                  {% endif %}
+
+                  {% if msg.arquivo %}
+                    <div class="mt-2 {% if msg.remetente_empresa %}bg-purple-700{% else %}bg-gray-300{% endif %} rounded-lg p-3">
+                      {% if msg.is_imagem %}
+                        <a href="{{ msg.arquivo.url }}" target="_blank" class="block">
+                          <img src="{{ msg.arquivo.url }}" alt="{{ msg.get_nome_arquivo }}" class="max-w-full h-auto rounded">
+                        </a>
+                      {% else %}
+                        <a href="{{ msg.arquivo.url }}" target="_blank" class="flex items-center hover:underline">
+                          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                          </svg>
+                          <span class="text-sm">{{ msg.get_nome_arquivo }}</span>
+                        </a>
+                      {% endif %}
+                    </div>
+                  {% endif %}
                 </div>
                 <p class="text-xs text-gray-500 mt-1 {% if msg.remetente_empresa %}text-right{% endif %}">
                   {{ msg.enviada_em|date:"d/m/Y H:i" }}
@@ -78,23 +113,47 @@
       </div>
 
       <!-- Formulário de envio -->
-      <div class="border-t border-gray-200 p-4 bg-gray-50">
-        <form method="POST" class="flex gap-3">
-          {% csrf_token %}
-          <textarea
-            name="mensagem"
-            rows="2"
-            placeholder="Digite sua mensagem..."
-            required
-            class="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-600 resize-none"
-          ></textarea>
-          <button
-            type="submit"
-            class="bg-purple-600 hover:bg-purple-700 text-white px-8 py-2 rounded-lg transition font-medium self-end">
-            Enviar
-          </button>
-        </form>
-      </div>
+      {% if not vaga_encerrada %}
+        <div class="border-t border-gray-200 p-4 bg-gray-50">
+          <form method="POST" enctype="multipart/form-data" id="chat-form">
+            {% csrf_token %}
+            <div class="flex gap-3 items-end">
+              <div class="flex-1">
+                <textarea
+                  name="mensagem"
+                  id="mensagem-input"
+                  rows="2"
+                  placeholder="Digite sua mensagem..."
+                  class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-600 resize-none"
+                ></textarea>
+                <div id="arquivo-preview" class="mt-2 hidden">
+                  <div class="flex items-center justify-between bg-purple-50 border border-purple-200 rounded-lg px-3 py-2">
+                    <span id="arquivo-nome" class="text-sm text-purple-800"></span>
+                    <button type="button" onclick="removerArquivo()" class="text-purple-600 hover:text-purple-800">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div class="flex gap-2">
+                <label for="arquivo-input" class="cursor-pointer bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg transition font-medium">
+                  <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
+                  </svg>
+                </label>
+                <input type="file" id="arquivo-input" name="arquivo" class="hidden" accept=".pdf,.jpg,.jpeg,.png,.gif,.bmp,.webp,.doc,.docx" onchange="mostrarArquivo()">
+                <button
+                  type="submit"
+                  class="bg-purple-600 hover:bg-purple-700 text-white px-8 py-2 rounded-lg transition font-medium">
+                  Enviar
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      {% endif %}
     </div>
 
     <!-- Info adicional -->
@@ -127,6 +186,26 @@
   const chatMessages = document.getElementById('chat-messages');
   if (chatMessages) {
     chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+
+  // Funções para gerenciar arquivo
+  function mostrarArquivo() {
+    const input = document.getElementById('arquivo-input');
+    const preview = document.getElementById('arquivo-preview');
+    const nomeArquivo = document.getElementById('arquivo-nome');
+
+    if (input.files.length > 0) {
+      nomeArquivo.textContent = input.files[0].name;
+      preview.classList.remove('hidden');
+    }
+  }
+
+  function removerArquivo() {
+    const input = document.getElementById('arquivo-input');
+    const preview = document.getElementById('arquivo-preview');
+
+    input.value = '';
+    preview.classList.add('hidden');
   }
 
   // Auto-refresh a cada 10 segundos

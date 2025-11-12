@@ -60,24 +60,27 @@
             </span>
             {% if vaga_ext.status_medico == 'pendente' %}
             <span class="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">
-              ⏳ Aguardando Avaliação
+              Aguardando Avaliação
             </span>
             {% elif vaga_ext.status_medico == 'aprovada' %}
             <span class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
-              ✅ Aprovada
+              Aprovada
             </span>
             {% elif vaga_ext.status_medico == 'rejeitada' %}
             <span class="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full">
-              ❌ Rejeitada
+              Rejeitada
             </span>
             {% endif %}
           </div>
 
           <div class="text-gray-600 mb-3">
             <p class="font-medium">{{ vaga_ext.vaga.empresa.razao_social }}</p>
-            <p class="text-sm">
-              📍 {{ vaga_ext.vaga.cidade }}, {{ vaga_ext.vaga.uf }} |
-              {{ vaga_ext.vaga.get_modalidade_display }}
+            <p class="text-sm flex items-center">
+              <svg class="w-4 h-4 mr-1 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+              </svg>
+              {{ vaga_ext.vaga.cidade }}, {{ vaga_ext.vaga.uf }} | {{ vaga_ext.vaga.get_modalidade_display }}
             </p>
             {% if vaga_ext.numero_vagas > 1 %}
             <p class="text-sm">Número de vagas: {{ vaga_ext.numero_vagas }}</p>
@@ -124,7 +127,11 @@
     {% endfor %}
     {% else %}
     <div class="bg-white rounded-lg shadow-md text-center py-12">
-      <div class="text-4xl mb-4">💼</div>
+      <div class="flex justify-center mb-4">
+        <svg class="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 002 2h2a2 2 0 002-2V6"/>
+        </svg>
+      </div>
       <p class="text-gray-500 text-lg">Nenhuma vaga encontrada com os filtros aplicados.</p>
       <a href="{% url 'vagas_pendentes' %}" class="text-blue-600 hover:underline mt-2 inline-block">
         Limpar filtros
